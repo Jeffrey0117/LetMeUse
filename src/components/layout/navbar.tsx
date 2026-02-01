@@ -23,7 +23,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-zinc-200">
-      <div className="mx-auto flex h-14 items-center px-10 lg:px-20">
+      <div className="mx-auto flex h-14 items-center px-12 lg:px-32">
         <Link href="/" className="text-lg font-bold tracking-tight text-zinc-900 mr-8">
           AdMan
         </Link>
