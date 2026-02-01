@@ -31,7 +31,7 @@ export default function RootLayout({
       >
         <LangProvider>
           <Navbar />
-          <main className="min-h-screen bg-zinc-50 px-6 lg:px-12">{children}</main>
+          <main className="min-h-screen bg-zinc-50 px-10 lg:px-20">{children}</main>
         </LangProvider>
       </body>
     </html>
