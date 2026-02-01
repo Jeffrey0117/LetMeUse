@@ -8,9 +8,11 @@ import type { TranslationKey } from '@/lib/i18n'
 import {
   AD_TYPES,
   AD_STATUSES,
-  AD_POSITIONS,
+  TYPE_DEFAULT_POSITIONS,
+  TYPE_POSITION_OPTIONS,
 } from '@/lib/constants'
 import type { AdType, AdStatus, AdPosition } from '@/lib/constants'
+import { getTemplateById } from '@/lib/templates'
 
 interface Project {
   id: string
@@ -43,6 +45,7 @@ interface AdFormProps {
   mode: 'create' | 'edit'
   adId?: string
   defaultProjectId?: string
+  defaultTemplateId?: string
 }
 
 const defaultStyle = {
@@ -55,30 +58,62 @@ const defaultStyle = {
   maxWidth: '100%',
 }
 
-export function AdForm({ mode, adId, defaultProjectId }: AdFormProps) {
+export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFormProps) {
   const router = useRouter()
-  const { t } = useLang()
+  const { locale, t } = useLang()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState<AdFormData>({
-    projectId: defaultProjectId ?? '',
-    name: '',
-    type: 'bottom-banner',
-    status: 'draft',
-    position: 'fixed-bottom',
-    headline: '',
-    bodyText: '',
-    ctaText: '',
-    ctaUrl: '',
-    imageUrl: '',
-    style: { ...defaultStyle },
+  const [templateApplied, setTemplateApplied] = useState(false)
+  const [form, setForm] = useState<AdFormData>(() => {
+    const base: AdFormData = {
+      projectId: defaultProjectId ?? '',
+      name: '',
+      type: 'bottom-banner',
+      status: 'draft',
+      position: 'fixed-bottom',
+      headline: '',
+      bodyText: '',
+      ctaText: '',
+      ctaUrl: '',
+      imageUrl: '',
+      style: { ...defaultStyle },
+    }
+
+    if (defaultTemplateId) {
+      const tpl = getTemplateById(defaultTemplateId)
+      if (tpl) {
+        return {
+          ...base,
+          name: tpl.name[locale],
+          type: tpl.suggestedType,
+          position: tpl.suggestedPosition,
+          headline: tpl.headline[locale],
+          bodyText: tpl.bodyText[locale],
+          ctaText: tpl.ctaText[locale],
+          style: { ...tpl.style },
+        }
+      }
+    }
+
+    return base
   })
 
   useEffect(() => {
     loadData()
+    if (defaultTemplateId && getTemplateById(defaultTemplateId)) {
+      setTemplateApplied(true)
+    }
   }, [])
+
+  useEffect(() => {
+    const defaultPos = TYPE_DEFAULT_POSITIONS[form.type]
+    const options = TYPE_POSITION_OPTIONS[form.type]
+    if (!options.includes(form.position)) {
+      updateForm({ position: defaultPos })
+    }
+  }, [form.type])
 
   async function loadData() {
     try {
@@ -204,6 +239,12 @@ export function AdForm({ mode, adId, defaultProjectId }: AdFormProps) {
         {mode === 'create' ? t('adForm.create') : `${t('adForm.editPrefix')} ${form.name}`}
       </h1>
 
+      {templateApplied && (
+        <div className="mt-3 rounded-md bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700">
+          {t('templates.applied')}
+        </div>
+      )}
+
       {error && (
         <div className="mt-3 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
           {error}
@@ -261,8 +302,9 @@ export function AdForm({ mode, adId, defaultProjectId }: AdFormProps) {
                 className={selectClass}
                 value={form.position}
                 onChange={(e) => updateForm({ position: e.target.value as AdPosition })}
+                disabled={TYPE_POSITION_OPTIONS[form.type].length <= 1}
               >
-                {AD_POSITIONS.map((pos) => (
+                {TYPE_POSITION_OPTIONS[form.type].map((pos) => (
                   <option key={pos} value={pos}>
                     {t(`position.${pos}` as TranslationKey)}
                   </option>

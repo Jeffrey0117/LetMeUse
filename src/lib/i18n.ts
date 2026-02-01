@@ -1,7 +1,7 @@
 export type Locale = 'en' | 'zh'
 
 const translations = {
-  // Sidebar
+  // Navigation
   'nav.dashboard': { en: 'Dashboard', zh: '儀表板' },
   'nav.projects': { en: 'Projects', zh: '專案' },
   'nav.ads': { en: 'Ads', zh: '廣告' },
@@ -100,15 +100,36 @@ const translations = {
 
   // Type labels
   'type.bottom-banner': { en: 'Bottom Banner', zh: '底部橫幅' },
-  'type.sidebar': { en: 'Sidebar', zh: '側邊欄' },
-  'type.in-article-card': { en: 'In-Article Card', zh: '文中卡片' },
+  'type.top-notification': { en: 'Top Notification', zh: '頂部通知欄' },
+  'type.in-article-banner': { en: 'In-Article Banner', zh: '文中橫幅' },
+  'type.modal-popup': { en: 'Modal Popup', zh: '彈窗廣告' },
+  'type.sidebar-card': { en: 'Sidebar Card', zh: '側邊卡片' },
 
   // Position labels
   'position.fixed-bottom': { en: 'Fixed Bottom', zh: '固定底部' },
   'position.fixed-top': { en: 'Fixed Top', zh: '固定頂部' },
   'position.inline': { en: 'Inline', zh: '內嵌' },
+  'position.fixed': { en: 'Fixed (Modal)', zh: '固定（彈窗）' },
   'position.sidebar-left': { en: 'Sidebar Left', zh: '左側欄' },
   'position.sidebar-right': { en: 'Sidebar Right', zh: '右側欄' },
+
+  // Templates
+  'nav.templates': { en: 'Templates', zh: '模板' },
+  'templates.title': { en: 'Templates', zh: '模板' },
+  'templates.subtitle': { en: 'Pre-built ad templates for e-commerce campaigns', zh: '電商活動預設廣告模板' },
+  'templates.all': { en: 'All', zh: '全部' },
+  'templates.shopping': { en: 'Shopping Festivals', zh: '購物節' },
+  'templates.seasonal': { en: 'Seasonal Events', zh: '季節活動' },
+  'templates.member': { en: 'Member Events', zh: '會員活動' },
+  'templates.useTemplate': { en: 'Use Template', zh: '使用模板' },
+  'templates.dateRange': { en: 'Date', zh: '日期' },
+  'templates.suggestedType': { en: 'Type', zh: '類型' },
+  'templates.suggestedPosition': { en: 'Position', zh: '位置' },
+  'templates.colors': { en: 'Colors', zh: '配色' },
+  'templates.preview': { en: 'Preview', zh: '預覽' },
+  'templates.empty': { en: 'No templates in this category.', zh: '此分類暫無模板。' },
+  'templates.applied': { en: 'Template applied! Customize your ad below.', zh: '模板已套用！請在下方自訂您的廣告。' },
+  'templates.selectProject': { en: 'Select a project first to use a template', zh: '請先選擇專案再使用模板' },
 } as const
 
 export type TranslationKey = keyof typeof translations
