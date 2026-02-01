@@ -28,7 +28,7 @@
     "id": "ad_demo0002",
     "projectId": "proj_demo001",
     "name": "Sidebar Ad",
-    "type": "sidebar",
+    "type": "sidebar-card",
     "status": "enabled",
     "position": "sidebar-right",
     "headline": "Check out our course!",
@@ -54,7 +54,7 @@
     "id": "ad_demo0003",
     "projectId": "proj_demo002",
     "name": "Summer Sale Card",
-    "type": "in-article-card",
+    "type": "in-article-banner",
     "status": "draft",
     "position": "inline",
     "headline": "Summer Sale - Up to 50% Off!",
@@ -74,5 +74,30 @@
     },
     "createdAt": "2026-01-30T17:16:19.281Z",
     "updatedAt": "2026-01-30T17:16:19.281Z"
+  },
+  {
+    "id": "ad_threads_htmlcat",
+    "projectId": "proj_htmlcat",
+    "name": "追蹤 @html__cat Threads",
+    "type": "bottom-banner",
+    "status": "enabled",
+    "position": "fixed-bottom",
+    "headline": "Follow @html__cat on Threads",
+    "bodyText": "前端開發 / 技術分享 / 日常碎念",
+    "ctaText": "追蹤 Threads",
+    "ctaUrl": "https://www.threads.com/@html__cat",
+    "style": {
+      "backgroundColor": "#000000",
+      "textColor": "#ffffff",
+      "ctaBackgroundColor": "#ffffff",
+      "ctaTextColor": "#000000",
+      "borderRadius": "0px",
+      "zIndex": 9999,
+      "maxWidth": "100%",
+      "padding": "14px 24px",
+      "customCSS": ""
+    },
+    "createdAt": "2026-02-01T12:00:00.000Z",
+    "updatedAt": "2026-02-01T12:00:00.000Z"
   }
 ]
