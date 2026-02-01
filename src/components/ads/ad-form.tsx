@@ -59,6 +59,42 @@ const defaultStyle = {
   maxWidth: '100%',
 }
 
+function EmbedCodeBlock({ adId, t }: { adId: string; t: (key: TranslationKey) => string }) {
+  const [copied, setCopied] = useState(false)
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'YOUR_DOMAIN'
+  const code = `<div data-adman-id="${adId}"></div>\n<script src="${origin}/embed/adman.js"></script>`
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback: select text
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-lg border border-zinc-200 bg-white p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold text-zinc-700">
+          {t('adForm.embedCode')}
+        </h3>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
+        >
+          {copied ? t('adForm.copied') : t('adForm.copy')}
+        </button>
+      </div>
+      <pre className="rounded bg-zinc-100 p-3 text-xs text-zinc-700 overflow-x-auto select-all">
+        {code}
+      </pre>
+    </div>
+  )
+}
+
 export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFormProps) {
   const router = useRouter()
   const { locale, t } = useLang()
@@ -581,15 +617,7 @@ export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFo
           </div>
 
           {mode === 'edit' && adId && (
-            <div className="mt-6 rounded-lg border border-zinc-200 bg-white p-4">
-              <h3 className="text-sm font-semibold text-zinc-700 mb-2">
-                {t('adForm.embedCode')}
-              </h3>
-              <pre className="rounded bg-zinc-100 p-3 text-xs text-zinc-700 overflow-x-auto">
-{`<div data-adman-id="${adId}"></div>
-<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/embed/adman.js" data-base-url="${typeof window !== 'undefined' ? window.location.origin : ''}"></script>`}
-              </pre>
-            </div>
+            <EmbedCodeBlock adId={adId} t={t} />
           )}
         </div>
       </div>

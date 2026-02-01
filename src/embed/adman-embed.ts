@@ -1,6 +1,19 @@
 ;(function () {
   const scriptTag = document.currentScript as HTMLScriptElement | null
-  const BASE_URL = scriptTag?.getAttribute('data-base-url') ?? ''
+
+  function resolveBaseUrl(): string {
+    const explicit = scriptTag?.getAttribute('data-base-url')
+    if (explicit) return explicit.replace(/\/+$/, '')
+    const src = scriptTag?.getAttribute('src') ?? ''
+    try {
+      const url = new URL(src, window.location.href)
+      return url.origin
+    } catch {
+      return ''
+    }
+  }
+
+  const BASE_URL = resolveBaseUrl()
 
   const containers = document.querySelectorAll<HTMLElement>('[data-adman-id]')
 

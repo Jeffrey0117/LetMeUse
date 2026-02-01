@@ -83,6 +83,8 @@ const translations = {
   'adForm.cancel': { en: 'Cancel', zh: '取消' },
   'adForm.livePreview': { en: 'Live Preview', zh: '即時預覽' },
   'adForm.embedCode': { en: 'Embed Code', zh: '嵌入程式碼' },
+  'adForm.copied': { en: 'Copied!', zh: '已複製！' },
+  'adForm.copy': { en: 'Copy', zh: '複製' },
 
   // Preview
   'preview.back': { en: 'Back to Edit', zh: '返回編輯' },
