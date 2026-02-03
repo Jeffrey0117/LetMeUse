@@ -175,6 +175,7 @@
 
   function renderTopNotification(_container: HTMLElement, ad: Record<string, unknown>): void {
     const style = ad.style as Record<string, string | number>
+    const mobile = isMobile()
     const wrapper = document.createElement('div')
     wrapper.setAttribute('data-adman-wrapper', '')
 
@@ -186,15 +187,26 @@
       right: '0',
       zIndex: String(style.zIndex),
       display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '10px 16px',
+      flexDirection: mobile ? 'column' : 'row',
+      alignItems: mobile ? 'stretch' : 'center',
+      gap: mobile ? '8px' : '12px',
+      padding: mobile ? '12px 16px' : '10px 16px',
       boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
     })
 
-    let html = `<span style="flex:1;font-size:0.875em;font-weight:500">${escapeHtml(ad.headline as string)}</span>`
-    html += ctaHtml(ad).replace('padding:8px 20px', 'padding:6px 16px').replace('font-size:0.875em', 'font-size:0.8125em')
-    html += dismissBtn(String(style.textColor))
+    let html = ''
+    if (mobile) {
+      // Mobile: headline row with dismiss, then CTA below
+      html += `<div style="display:flex;align-items:center;gap:8px">`
+      html += `<span style="flex:1;font-size:0.875em;font-weight:500">${escapeHtml(ad.headline as string)}</span>`
+      html += dismissBtn(String(style.textColor))
+      html += `</div>`
+      html += ctaHtml(ad).replace('display:inline-block', 'display:block;text-align:center;width:100%').replace('padding:8px 20px', 'padding:8px 16px')
+    } else {
+      html += `<span style="flex:1;font-size:0.875em;font-weight:500">${escapeHtml(ad.headline as string)}</span>`
+      html += ctaHtml(ad).replace('padding:8px 20px', 'padding:6px 16px').replace('font-size:0.875em', 'font-size:0.8125em')
+      html += dismissBtn(String(style.textColor))
+    }
 
     wrapper.innerHTML = html
     document.body.appendChild(wrapper)
@@ -202,6 +214,7 @@
 
   function renderInArticleBanner(container: HTMLElement, ad: Record<string, unknown>): void {
     const style = ad.style as Record<string, string | number>
+    const mobile = isMobile()
     const wrapper = document.createElement('div')
     wrapper.setAttribute('data-adman-wrapper', '')
 
@@ -210,13 +223,17 @@
       boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
     })
 
-    let html = imageHtml(ad, '200px', 'width:100%')
+    let html = imageHtml(ad, mobile ? '150px' : '200px', 'width:100%')
     html += `<h3 style="margin:0 0 6px;font-size:1.125em;font-weight:600">${escapeHtml(ad.headline as string)}</h3>`
     const bodyText = ad.bodyText as string
     if (bodyText) {
       html += `<p style="margin:0 0 12px;font-size:0.875em;opacity:0.85;line-height:1.5">${escapeHtml(bodyText)}</p>`
     }
-    html += ctaHtml(ad)
+    if (mobile) {
+      html += ctaHtml(ad).replace('display:inline-block', 'display:block;text-align:center;width:100%')
+    } else {
+      html += ctaHtml(ad)
+    }
 
     wrapper.innerHTML = html
     container.appendChild(wrapper)
@@ -224,6 +241,7 @@
 
   function renderModalPopup(_container: HTMLElement, ad: Record<string, unknown>): void {
     const style = ad.style as Record<string, string | number>
+    const mobile = isMobile()
     const backdrop = document.createElement('div')
     backdrop.setAttribute('data-adman-wrapper', '')
 
@@ -238,20 +256,25 @@
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: String(style.zIndex),
+      padding: mobile ? '16px' : '0',
     })
 
     const card = document.createElement('div')
+    const cardStyles = baseStyles(style, ad.backgroundImageUrl as string | undefined)
+    if (mobile) {
+      cardStyles.padding = '16px'
+    }
     Object.assign(card.style, {
-      ...baseStyles(style, ad.backgroundImageUrl as string | undefined),
+      ...cardStyles,
       maxWidth: '400px',
-      width: '90%',
+      width: mobile ? '100%' : '90%',
       position: 'relative',
       boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
     })
 
     let html = `<div style="position:absolute;top:8px;right:8px">${dismissBtn(String(style.textColor))}</div>`
-    html += imageHtml(ad, '180px', 'width:100%')
-    html += `<h3 style="margin:0 0 8px;font-size:1.25em;font-weight:600">${escapeHtml(ad.headline as string)}</h3>`
+    html += imageHtml(ad, mobile ? '140px' : '180px', 'width:100%')
+    html += `<h3 style="margin:0 0 8px;font-size:${mobile ? '1.125em' : '1.25em'};font-weight:600">${escapeHtml(ad.headline as string)}</h3>`
     const bodyText = ad.bodyText as string
     if (bodyText) {
       html += `<p style="margin:0 0 16px;font-size:0.875em;opacity:0.85;line-height:1.5">${escapeHtml(bodyText)}</p>`
@@ -270,16 +293,17 @@
 
   function renderSidebarCard(container: HTMLElement, ad: Record<string, unknown>): void {
     const style = ad.style as Record<string, string | number>
+    const mobile = isMobile()
     const wrapper = document.createElement('div')
     wrapper.setAttribute('data-adman-wrapper', '')
 
     Object.assign(wrapper.style, {
       ...baseStyles(style, ad.backgroundImageUrl as string | undefined),
-      maxWidth: '280px',
+      maxWidth: mobile ? '100%' : '280px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
     })
 
-    let html = imageHtml(ad, '160px', 'width:100%')
+    let html = imageHtml(ad, mobile ? '120px' : '160px', 'width:100%')
     html += `<h3 style="margin:0 0 6px;font-size:1em;font-weight:600">${escapeHtml(ad.headline as string)}</h3>`
     const bodyText = ad.bodyText as string
     if (bodyText) {
