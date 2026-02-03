@@ -107,6 +107,10 @@
     return `<img src="${escapeHtml(resolveImageSrc(imageUrl))}" alt="" style="max-width:100%;border-radius:4px;margin-bottom:8px;object-fit:cover;max-height:${maxHeight};${extraStyle}" />`
   }
 
+  function isMobile(): boolean {
+    return window.innerWidth < 640
+  }
+
   function renderByType(container: HTMLElement, ad: Record<string, unknown>): void {
     const type = ad.type as string
     switch (type) {
@@ -127,6 +131,7 @@
 
   function renderBottomBanner(_container: HTMLElement, ad: Record<string, unknown>): void {
     const style = ad.style as Record<string, string | number>
+    const mobile = isMobile()
     const wrapper = document.createElement('div')
     wrapper.setAttribute('data-adman-wrapper', '')
 
@@ -138,14 +143,16 @@
       right: '0',
       zIndex: String(style.zIndex),
       display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
+      flexDirection: mobile ? 'column' : 'row',
+      alignItems: mobile ? 'stretch' : 'center',
+      gap: mobile ? '12px' : '16px',
       boxShadow: '0 -2px 8px rgba(0,0,0,0.15)',
     })
 
     let html = ''
     const imageUrl = ad.imageUrl as string | undefined
-    if (imageUrl) {
+    // Hide image on mobile to save space
+    if (imageUrl && !mobile) {
       html += `<img src="${escapeHtml(resolveImageSrc(imageUrl))}" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:4px;flex-shrink:0" />`
     }
     html += `<div style="flex:1;min-width:0">`
@@ -155,7 +162,12 @@
       html += `<p style="margin:0;font-size:0.8125em;opacity:0.85;line-height:1.4">${escapeHtml(bodyText)}</p>`
     }
     html += `</div>`
-    html += ctaHtml(ad)
+    // Full-width CTA on mobile
+    if (mobile) {
+      html += ctaHtml(ad).replace('display:inline-block', 'display:block;text-align:center;width:100%')
+    } else {
+      html += ctaHtml(ad)
+    }
 
     wrapper.innerHTML = html
     document.body.appendChild(wrapper)
