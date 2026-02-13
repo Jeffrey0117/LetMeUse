@@ -1,5 +1,7 @@
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import bcrypt from 'bcryptjs'
+import { nanoid } from 'nanoid'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 
@@ -103,19 +105,77 @@ const ads = [
   },
 ]
 
+// ── Auth seed data ──────────────────────────────────────
+
+const adminEmail = process.env.ADMAN_DEFAULT_ADMIN_EMAIL ?? 'admin@example.com'
+const adminPassword = process.env.ADMAN_DEFAULT_ADMIN_PASSWORD ?? 'changeme'
+
+const defaultApp = {
+  id: `app_${nanoid(8)}`,
+  name: 'adman-demo',
+  secret: nanoid(32),
+  domains: ['http://localhost:3000', 'http://localhost:5173'],
+  createdAt: now,
+  updatedAt: now,
+}
+
 async function seed() {
   await mkdir(DATA_DIR, { recursive: true })
+
+  // Seed projects
   await writeFile(
     path.join(DATA_DIR, 'projects.json'),
     JSON.stringify(projects, null, 2)
   )
+
+  // Seed ads
   await writeFile(
     path.join(DATA_DIR, 'ads.json'),
     JSON.stringify(ads, null, 2)
   )
+
+  // Seed default app
+  await writeFile(
+    path.join(DATA_DIR, 'apps.json'),
+    JSON.stringify([defaultApp], null, 2)
+  )
+
+  // Seed admin user
+  const passwordHash = await bcrypt.hash(adminPassword, 10)
+  const adminUser = {
+    id: `usr_${nanoid(12)}`,
+    appId: defaultApp.id,
+    email: adminEmail,
+    passwordHash,
+    displayName: 'Admin',
+    role: 'admin',
+    disabled: false,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  await writeFile(
+    path.join(DATA_DIR, 'users.json'),
+    JSON.stringify([adminUser], null, 2)
+  )
+
+  // Seed empty refresh tokens
+  await writeFile(
+    path.join(DATA_DIR, 'refresh_tokens.json'),
+    JSON.stringify([], null, 2)
+  )
+
   console.log('Seeded data:')
   console.log(`  - ${projects.length} projects`)
   console.log(`  - ${ads.length} ads`)
+  console.log(`  - 1 app (${defaultApp.name}), ID: ${defaultApp.id}`)
+  console.log(`  - 1 admin user (${adminEmail})`)
+  console.log(`\nDefault app credentials:`)
+  console.log(`  APP_ID:     ${defaultApp.id}`)
+  console.log(`  APP_SECRET: ${defaultApp.secret}`)
+  console.log(`\nAdmin login:`)
+  console.log(`  Email:    ${adminEmail}`)
+  console.log(`  Password: ${adminPassword}`)
 }
 
 seed().catch(console.error)

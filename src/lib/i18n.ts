@@ -193,6 +193,77 @@ const translations = {
   'templates.empty': { en: 'No templates in this category.', zh: '此分類暫無模板。' },
   'templates.applied': { en: 'Template applied! Customize your ad below.', zh: '模板已套用！請在下方自訂您的廣告。' },
   'templates.selectProject': { en: 'Select a project first to use a template', zh: '請先選擇專案再使用模板' },
+
+  // Auth
+  'auth.login': { en: 'Sign In', zh: '登入' },
+  'auth.register': { en: 'Create Account', zh: '建立帳號' },
+  'auth.email': { en: 'Email', zh: '電子信箱' },
+  'auth.password': { en: 'Password', zh: '密碼' },
+  'auth.displayName': { en: 'Display Name', zh: '顯示名稱' },
+  'auth.loginBtn': { en: 'Sign In', zh: '登入' },
+  'auth.registerBtn': { en: 'Create Account', zh: '建立帳號' },
+  'auth.switchToRegister': { en: "Don't have an account? Sign up", zh: '沒有帳號？註冊' },
+  'auth.switchToLogin': { en: 'Already have an account? Sign in', zh: '已有帳號？登入' },
+  'auth.loginTitle': { en: 'Sign in to your account', zh: '登入您的帳號' },
+  'auth.registerTitle': { en: 'Create a new account', zh: '建立新帳號' },
+
+  // Admin Nav
+  'nav.admin': { en: 'Admin', zh: '管理' },
+  'admin.nav.dashboard': { en: 'Dashboard', zh: '儀表板' },
+  'admin.nav.users': { en: 'Users', zh: '使用者' },
+  'admin.nav.apps': { en: 'Apps', zh: '應用程式' },
+  'admin.backToSite': { en: 'Back to Site', zh: '返回網站' },
+
+  // Admin Dashboard
+  'admin.dashboard.title': { en: 'Admin Dashboard', zh: '管理儀表板' },
+  'admin.dashboard.recentUsers': { en: 'Recent Registrations', zh: '最近註冊' },
+  'admin.dashboard.noUsers': { en: 'No users yet.', zh: '尚無使用者。' },
+
+  // Admin Stats
+  'admin.stats.totalUsers': { en: 'Total Users', zh: '使用者總數' },
+  'admin.stats.todayNew': { en: 'Today New', zh: '今日新增' },
+  'admin.stats.activeUsers': { en: 'Active Users', zh: '活躍使用者' },
+
+  // Admin Table
+  'admin.table.email': { en: 'Email', zh: '信箱' },
+  'admin.table.name': { en: 'Name', zh: '名稱' },
+  'admin.table.role': { en: 'Role', zh: '角色' },
+  'admin.table.status': { en: 'Status', zh: '狀態' },
+  'admin.table.joined': { en: 'Joined', zh: '加入日期' },
+
+  // Admin Users
+  'admin.users.title': { en: 'User Management', zh: '使用者管理' },
+  'admin.users.total': { en: 'user(s)', zh: '位使用者' },
+  'admin.users.searchPlaceholder': { en: 'Search by email or name...', zh: '以信箱或名稱搜尋...' },
+  'admin.users.empty': { en: 'No users found.', zh: '找不到使用者。' },
+  'admin.users.view': { en: 'View', zh: '檢視' },
+  'admin.users.active': { en: 'Active', zh: '啟用' },
+  'admin.users.disabled': { en: 'Disabled', zh: '停用' },
+  'admin.users.backToList': { en: 'Back to Users', zh: '返回使用者列表' },
+  'admin.users.lastLogin': { en: 'Last Login', zh: '最後登入' },
+  'admin.users.promoteToAdmin': { en: 'Promote to Admin', zh: '升級為管理員' },
+  'admin.users.demoteToUser': { en: 'Demote to User', zh: '降級為一般使用者' },
+  'admin.users.enable': { en: 'Enable', zh: '啟用' },
+  'admin.users.disable': { en: 'Disable', zh: '停用' },
+  'admin.users.delete': { en: 'Delete', zh: '刪除' },
+  'admin.users.confirmDelete': { en: 'Are you sure you want to delete this user?', zh: '確定要刪除此使用者？' },
+
+  // Admin Apps
+  'admin.apps.title': { en: 'App Management', zh: '應用程式管理' },
+  'admin.apps.create': { en: '+ New App', zh: '+ 新增應用程式' },
+  'admin.apps.newApp': { en: 'Create New App', zh: '建立新應用程式' },
+  'admin.apps.namePlaceholder': { en: 'App name', zh: '應用程式名稱' },
+  'admin.apps.domainsPlaceholder': { en: 'Allowed domains (comma separated)', zh: '允許的網域（逗號分隔）' },
+  'admin.apps.createBtn': { en: 'Create', zh: '建立' },
+  'admin.apps.empty': { en: 'No apps yet. Create one to get started.', zh: '尚無應用程式，建立一個開始吧。' },
+  'admin.apps.delete': { en: 'Delete', zh: '刪除' },
+  'admin.apps.confirmDelete': { en: 'Are you sure you want to delete this app?', zh: '確定要刪除此應用程式？' },
+  'admin.apps.domains': { en: 'Allowed Domains', zh: '允許的網域' },
+  'admin.apps.scriptTag': { en: 'Script Tag', zh: '嵌入標籤' },
+
+  // Admin Pagination
+  'admin.pagination.prev': { en: 'Previous', zh: '上一頁' },
+  'admin.pagination.next': { en: 'Next', zh: '下一頁' },
 } as const
 
 export type TranslationKey = keyof typeof translations
