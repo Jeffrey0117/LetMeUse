@@ -206,7 +206,7 @@
     fireCallbacks()
   }
 
-  // ── Modal UI ────────────────────────────────────────────
+  // ── Modal UI (Shadow DOM isolated) ────────────────────
 
   const isDark = theme === 'dark'
   const bg = isDark ? '#1e1e2e' : '#ffffff'
@@ -214,78 +214,95 @@
   const subtextColor = isDark ? '#a6adc8' : '#64748b'
   const inputBg = isDark ? '#313244' : '#f8fafc'
   const inputBorder = isDark ? '#45475a' : '#e2e8f0'
-  const borderColor = isDark ? '#45475a' : '#e2e8f0'
+
+  const MODAL_STYLES = `
+    :host {
+      position: fixed; inset: 0; z-index: 99999;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    .adman-card {
+      background: ${bg}; color: ${textColor}; border-radius: 16px;
+      padding: 36px; width: 100%; max-width: 400px; position: relative;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+    }
+    .adman-close {
+      position: absolute; top: 14px; right: 14px; background: none; border: none;
+      font-size: 22px; cursor: pointer; color: ${subtextColor}; padding: 4px 8px;
+      border-radius: 6px; line-height: 1; transition: background 0.15s;
+    }
+    .adman-close:hover { background: ${inputBg}; }
+    .adman-title {
+      font-size: 24px; font-weight: 700; margin-bottom: 28px; text-align: center;
+      letter-spacing: -0.3px;
+    }
+    .adman-field { margin-bottom: 18px; }
+    .adman-label {
+      display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;
+      color: ${subtextColor}; letter-spacing: 0.2px;
+    }
+    .adman-input {
+      display: block; width: 100%; padding: 11px 14px;
+      border: 1.5px solid ${inputBorder}; border-radius: 10px;
+      font-size: 15px; font-family: inherit;
+      background: ${inputBg}; color: ${textColor};
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .adman-input:focus {
+      border-color: ${accent};
+      box-shadow: 0 0 0 3px ${accent}22;
+    }
+    .adman-input::placeholder { color: ${subtextColor}; opacity: 0.6; }
+    .adman-btn {
+      display: block; width: 100%; padding: 13px; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+      background: ${accent}; color: #fff; margin-top: 12px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .adman-btn:hover { opacity: 0.92; }
+    .adman-btn:active { transform: scale(0.99); }
+    .adman-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .adman-switch {
+      text-align: center; margin-top: 20px; font-size: 13px; color: ${subtextColor};
+    }
+    .adman-switch a {
+      color: ${accent}; cursor: pointer; text-decoration: none; font-weight: 600;
+    }
+    .adman-switch a:hover { text-decoration: underline; }
+    .adman-error {
+      background: ${isDark ? '#3b1c1c' : '#fef2f2'};
+      color: ${isDark ? '#f87171' : '#dc2626'};
+      padding: 11px 14px; border-radius: 10px;
+      font-size: 13px; margin-bottom: 18px;
+      border: 1px solid ${isDark ? '#5c2828' : '#fecaca'};
+    }
+    @media (max-width: 480px) {
+      .adman-card { margin: 16px; padding: 28px; }
+    }
+  `
 
   function createModal(initialMode: 'login' | 'register'): void {
     // Remove existing modal if any
-    const existing = document.getElementById('adman-auth-modal')
+    const existing = document.getElementById('adman-auth-host')
     if (existing) existing.remove()
 
     let currentMode = initialMode
     let errorMsg = ''
     let loading = false
 
-    const overlay = document.createElement('div')
-    overlay.id = 'adman-auth-modal'
+    // Create host element + shadow root for style isolation
+    const host = document.createElement('div')
+    host.id = 'adman-auth-host'
+    host.style.cssText = 'position:fixed;inset:0;z-index:99999;'
+    const shadow = host.attachShadow({ mode: 'closed' })
 
     function render(): void {
       const isLogin = currentMode === 'login'
 
-      overlay.innerHTML = `
-        <style>
-          #adman-auth-modal {
-            position: fixed; inset: 0; z-index: 99999;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.5); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          }
-          #adman-auth-modal * { box-sizing: border-box; margin: 0; padding: 0; }
-          .adman-card {
-            background: ${bg}; color: ${textColor}; border-radius: 12px;
-            padding: 32px; width: 100%; max-width: 400px; position: relative;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-          }
-          .adman-close {
-            position: absolute; top: 12px; right: 12px; background: none; border: none;
-            font-size: 20px; cursor: pointer; color: ${subtextColor}; padding: 4px 8px;
-            border-radius: 4px; line-height: 1;
-          }
-          .adman-close:hover { background: ${inputBg}; }
-          .adman-title {
-            font-size: 22px; font-weight: 700; margin-bottom: 24px; text-align: center;
-          }
-          .adman-field { margin-bottom: 16px; }
-          .adman-label {
-            display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: ${subtextColor};
-          }
-          .adman-input {
-            width: 100%; padding: 10px 12px; border: 1px solid ${inputBorder}; border-radius: 8px;
-            font-size: 14px; background: ${inputBg}; color: ${textColor}; outline: none;
-            transition: border-color 0.2s;
-          }
-          .adman-input:focus { border-color: ${accent}; }
-          .adman-btn {
-            width: 100%; padding: 12px; border: none; border-radius: 8px;
-            font-size: 15px; font-weight: 600; cursor: pointer;
-            background: ${accent}; color: #fff; margin-top: 8px;
-            transition: opacity 0.2s;
-          }
-          .adman-btn:hover { opacity: 0.9; }
-          .adman-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-          .adman-switch {
-            text-align: center; margin-top: 16px; font-size: 13px; color: ${subtextColor};
-          }
-          .adman-switch a {
-            color: ${accent}; cursor: pointer; text-decoration: none; font-weight: 500;
-          }
-          .adman-switch a:hover { text-decoration: underline; }
-          .adman-error {
-            background: #fef2f2; color: #dc2626; padding: 10px 12px; border-radius: 8px;
-            font-size: 13px; margin-bottom: 16px; border: 1px solid #fecaca;
-          }
-          @media (max-width: 480px) {
-            .adman-card { margin: 16px; padding: 24px; }
-          }
-        </style>
+      shadow.innerHTML = `
+        <style>${MODAL_STYLES}</style>
         <div class="adman-card">
           <button class="adman-close" id="adman-close-btn">&times;</button>
           <div class="adman-title">${isLogin ? t('title.login') : t('title.register')}</div>
@@ -318,21 +335,24 @@
       `
 
       // Bind events
-      const closeBtn = overlay.querySelector('#adman-close-btn')
-      closeBtn?.addEventListener('click', () => overlay.remove())
+      shadow.getElementById('adman-close-btn')?.addEventListener('click', () => host.remove())
 
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.remove()
+      // Click backdrop to close
+      shadow.addEventListener('click', (e) => {
+        if (e.target === shadow.firstElementChild?.nextElementSibling) return
+        const card = shadow.querySelector('.adman-card')
+        if (card && !card.contains(e.target as Node)) {
+          host.remove()
+        }
       })
 
-      const switchLink = overlay.querySelector('#adman-switch-mode')
-      switchLink?.addEventListener('click', () => {
+      shadow.getElementById('adman-switch-mode')?.addEventListener('click', () => {
         currentMode = isLogin ? 'register' : 'login'
         errorMsg = ''
         render()
       })
 
-      const form = overlay.querySelector('#adman-auth-form') as HTMLFormElement | null
+      const form = shadow.getElementById('adman-auth-form') as HTMLFormElement | null
       form?.addEventListener('submit', async (e) => {
         e.preventDefault()
         if (loading) return
@@ -357,7 +377,7 @@
             currentUser = data.user
             scheduleRefresh()
             fireCallbacks()
-            overlay.remove()
+            host.remove()
           } else {
             const displayName = formData.get('displayName') as string
             const data = (await apiPost('/api/auth/register', {
@@ -371,7 +391,7 @@
             currentUser = data.user
             scheduleRefresh()
             fireCallbacks()
-            overlay.remove()
+            host.remove()
           }
         } catch (err) {
           errorMsg = err instanceof Error ? err.message : t('error.generic')
@@ -382,11 +402,11 @@
     }
 
     render()
-    document.body.appendChild(overlay)
+    document.body.appendChild(host)
 
     // Focus first input
     setTimeout(() => {
-      const firstInput = overlay.querySelector('input') as HTMLInputElement | null
+      const firstInput = shadow.querySelector('input') as HTMLInputElement | null
       firstInput?.focus()
     }, 50)
   }
