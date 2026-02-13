@@ -13,7 +13,9 @@
 ;(function () {
   // ── Config from script tag ──────────────────────────────
 
-  const scriptTag = document.currentScript as HTMLScriptElement | null
+  // Support both static <script> and dynamic appendChild (where document.currentScript is null)
+  const scriptTag = (document.currentScript
+    ?? document.querySelector('script[src*="/sdk.js"][data-app-id]')) as HTMLScriptElement | null
   const appId = scriptTag?.getAttribute('data-app-id') ?? ''
   const theme = scriptTag?.getAttribute('data-theme') ?? 'light'
   const accent = scriptTag?.getAttribute('data-accent') ?? '#2563eb'
