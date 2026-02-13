@@ -219,65 +219,144 @@
 
   const MODAL_STYLES = `
     :host {
-      position: fixed; inset: 0; z-index: 99999;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.5);
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 99999 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(0,0,0,0.5) !important;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
     .adman-card {
-      background: ${bg}; color: ${textColor}; border-radius: 16px;
-      padding: 36px; width: 100%; max-width: 400px; position: relative;
+      background: ${bg};
+      color: ${textColor};
+      border-radius: 16px;
+      padding: 36px;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
       box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+      line-height: 1.5;
     }
     .adman-close {
-      position: absolute; top: 14px; right: 14px; background: none; border: none;
-      font-size: 22px; cursor: pointer; color: ${subtextColor}; padding: 4px 8px;
-      border-radius: 6px; line-height: 1; transition: background 0.15s;
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: ${subtextColor};
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      line-height: 1;
+      transition: background 0.15s;
+      padding: 0;
+      margin: 0;
     }
     .adman-close:hover { background: ${inputBg}; }
     .adman-title {
-      font-size: 24px; font-weight: 700; margin-bottom: 28px; text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 28px 0;
+      padding: 0;
+      text-align: center;
       letter-spacing: -0.3px;
     }
-    .adman-field { margin-bottom: 18px; }
+    .adman-field {
+      margin: 0 0 18px 0;
+      padding: 0;
+    }
     .adman-label {
-      display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;
-      color: ${subtextColor}; letter-spacing: 0.2px;
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      padding: 0;
+      color: ${subtextColor};
+      letter-spacing: 0.2px;
     }
     .adman-input {
-      display: block; width: 100%; padding: 11px 14px;
-      border: 1.5px solid ${inputBorder}; border-radius: 10px;
-      font-size: 15px; font-family: inherit;
-      background: ${inputBg}; color: ${textColor};
-      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      display: block;
+      width: 100%;
+      height: 44px;
+      padding: 0 14px;
+      margin: 0;
+      border: 1.5px solid ${inputBorder};
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      line-height: 44px;
+      background: ${inputBg};
+      color: ${textColor};
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     .adman-input:focus {
       border-color: ${accent};
       box-shadow: 0 0 0 3px ${accent}22;
     }
-    .adman-input::placeholder { color: ${subtextColor}; opacity: 0.6; }
+    .adman-input::placeholder {
+      color: ${subtextColor};
+      opacity: 0.6;
+    }
     .adman-btn {
-      display: block; width: 100%; padding: 13px; border: none; border-radius: 10px;
-      font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
-      background: ${accent}; color: #fff; margin-top: 12px;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      display: block;
+      width: 100%;
+      height: 48px;
+      padding: 0;
+      margin: 12px 0 0 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      line-height: 48px;
+      text-align: center;
+      cursor: pointer;
+      background: ${accent};
+      color: #fff;
       transition: opacity 0.2s, transform 0.1s;
     }
     .adman-btn:hover { opacity: 0.92; }
     .adman-btn:active { transform: scale(0.99); }
     .adman-btn:disabled { opacity: 0.55; cursor: not-allowed; }
     .adman-switch {
-      text-align: center; margin-top: 20px; font-size: 13px; color: ${subtextColor};
+      text-align: center;
+      margin: 20px 0 0 0;
+      padding: 0;
+      font-size: 13px;
+      color: ${subtextColor};
     }
     .adman-switch a {
-      color: ${accent}; cursor: pointer; text-decoration: none; font-weight: 600;
+      color: ${accent};
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
     }
     .adman-switch a:hover { text-decoration: underline; }
     .adman-error {
       background: ${isDark ? '#3b1c1c' : '#fef2f2'};
       color: ${isDark ? '#f87171' : '#dc2626'};
-      padding: 11px 14px; border-radius: 10px;
-      font-size: 13px; margin-bottom: 18px;
+      padding: 11px 14px;
+      margin: 0 0 18px 0;
+      border-radius: 10px;
+      font-size: 13px;
       border: 1px solid ${isDark ? '#5c2828' : '#fecaca'};
     }
     @media (max-width: 480px) {
