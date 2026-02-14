@@ -107,12 +107,12 @@ const ads = [
 
 // ── Auth seed data ──────────────────────────────────────
 
-const adminEmail = process.env.ADMAN_DEFAULT_ADMIN_EMAIL ?? 'admin@example.com'
-const adminPassword = process.env.ADMAN_DEFAULT_ADMIN_PASSWORD ?? 'changeme'
+const adminEmail = process.env.LETMEUSE_DEFAULT_ADMIN_EMAIL ?? 'admin@example.com'
+const adminPassword = process.env.LETMEUSE_DEFAULT_ADMIN_PASSWORD ?? 'changeme'
 
 const defaultApp = {
   id: `app_${nanoid(8)}`,
-  name: 'adman-demo',
+  name: 'letmeuse-demo',
   secret: nanoid(32),
   domains: ['http://localhost:3000', 'http://localhost:5173'],
   createdAt: now,

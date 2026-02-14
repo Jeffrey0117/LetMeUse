@@ -4,16 +4,18 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useLang } from '@/components/layout/lang-provider'
+import { useAdminNav } from '@/core/hooks/use-module'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useLang()
+  const navItems = useAdminNav()
   const [authorized, setAuthorized] = useState(false)
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('adman_admin_token')
+    const token = localStorage.getItem('lmu_admin_token')
     if (!token) {
       router.push('/login?redirect=/admin')
       return
@@ -24,7 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.user?.role === 'admin') {
+        if (data.data?.user?.role === 'admin') {
           setAuthorized(true)
         } else {
           router.push('/login?redirect=/admin')
@@ -46,12 +48,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!authorized) return null
 
-  const navItems = [
-    { href: '/admin', label: 'admin.nav.dashboard' as const },
-    { href: '/admin/users', label: 'admin.nav.users' as const },
-    { href: '/admin/apps', label: 'admin.nav.apps' as const },
-  ]
-
   function isActive(href: string) {
     if (href === '/admin') return pathname === '/admin'
     return pathname.startsWith(href)
@@ -62,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="bg-white border-b border-zinc-200">
         <div className="mx-auto flex h-14 items-center px-12 lg:px-32">
           <Link href="/admin" className="text-lg font-bold tracking-tight text-zinc-900 mr-8">
-            AdMan <span className="text-xs font-normal text-zinc-400 ml-1">Admin</span>
+            LetMeUse <span className="text-xs font-normal text-zinc-400 ml-1">Admin</span>
           </Link>
 
           <nav className="flex items-center gap-1 flex-1">

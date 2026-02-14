@@ -1,13 +1,13 @@
-# AdMan Widget Platform Extension
+# LetMeUse Widget Platform Extension
 
 ## Summary
 
-Extend AdMan from ad-only management to a universal embeddable widget platform. Two new widget categories added alongside existing 5 ad types:
+Extend LetMeUse from ad-only management to a universal embeddable widget platform. Two new widget categories added alongside existing 5 ad types:
 
 1. **Login / Register Form** - Embeddable auth widget
 2. **Feedback / Contact Form** - Embeddable feedback widget
 
-Same embed pattern: `<div data-adman-id="xxx"></div>` + script tag.
+Same embed pattern: `<div data-lmu-id="xxx"></div>` + script tag.
 
 ## Architecture
 
@@ -58,7 +58,7 @@ Extend the Ad model with a `category` field. Existing ads default to `category: 
 - `src/lib/i18n.ts` - Add widget translation keys
 - `src/components/ads/ad-form.tsx` - Category selector, conditional fields
 - `src/components/ads/ad-preview.tsx` - Route to widget previews
-- `src/embed/adman-embed.ts` - Route to widget renderers
+- `src/embed/letmeuse-embed.ts` - Route to widget renderers
 - `src/app/api/serve/[adId]/route.ts` - Serve widgets too
 - `src/app/page.tsx` - Dashboard shows widget counts
 - `src/components/layout/navbar.tsx` - Add "Widgets" nav item (or rename)
@@ -81,6 +81,6 @@ Extend the Ad model with a `category` field. Existing ads default to `category: 
 
 ### Form Submission
 
-Widget forms POST to the host site's configured `submitUrl`. AdMan acts as the UI layer only - it doesn't handle auth or store feedback data. This keeps it simple and flexible.
+Widget forms POST to the host site's configured `submitUrl`. LetMeUse acts as the UI layer only - it doesn't handle auth or store feedback data. This keeps it simple and flexible.
 
-Optional: `/api/widget-submit` proxy endpoint for sites that want AdMan to relay submissions.
+Optional: `/api/widget-submit` proxy endpoint for sites that want LetMeUse to relay submissions.

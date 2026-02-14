@@ -86,7 +86,7 @@ function EmbedCodeBlock({ adId, t }: { adId: string; t: (key: TranslationKey) =>
   const [copied, setCopied] = useState(false)
   const [attrsOpen, setAttrsOpen] = useState(false)
   const origin = typeof window !== 'undefined' ? window.location.origin : 'YOUR_DOMAIN'
-  const code = `<div data-adman-id="${adId}"></div>\n<script src="${origin}/embed/adman.js"></script>`
+  const code = `<div data-lmu-id="${adId}"></div>\n<script src="${origin}/embed/letmeuse.js"></script>`
 
   async function handleCopy() {
     try {
@@ -227,8 +227,8 @@ export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFo
   async function loadData() {
     try {
       const projRes = await fetch('/api/projects')
-      const projData = await projRes.json()
-      setProjects(projData)
+      const projJson = await projRes.json()
+      setProjects(projJson.data ?? [])
 
       if (mode === 'edit' && adId) {
         const adRes = await fetch(`/api/ads/${adId}`)
@@ -237,7 +237,8 @@ export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFo
           setLoading(false)
           return
         }
-        const adData = await adRes.json()
+        const adJson = await adRes.json()
+        const adData = adJson.data
         setForm({
           projectId: adData.projectId,
           name: adData.name,
@@ -322,14 +323,14 @@ export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFo
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        setError(data.error || 'Failed to save')
+        const errData = await res.json()
+        setError(errData.error || 'Failed to save')
         setSubmitting(false)
         return
       }
 
-      const saved = await res.json()
-      router.push(`/ads/${saved.id}/edit`)
+      const savedJson = await res.json()
+      router.push(`/ads/${savedJson.data.id}/edit`)
       router.refresh()
     } catch {
       setError('Failed to save')

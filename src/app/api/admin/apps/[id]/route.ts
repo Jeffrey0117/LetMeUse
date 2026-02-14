@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { UpdateAppSchema, type App } from '@/lib/auth-models'
 import { getById, update, remove, APPS_FILE } from '@/lib/storage'
 import { requireAdmin } from '@/lib/auth/middleware'
-import { corsResponse, jsonResponse, errorResponse } from '@/lib/auth/middleware'
+import { corsResponse, success, fail } from '@/lib/api-result'
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
@@ -24,13 +24,13 @@ export async function GET(
     const { id } = await params
     const app = await getById<App>(APPS_FILE, id)
     if (!app) {
-      return errorResponse('App not found', 404, origin)
+      return fail('App not found', 404, origin)
     }
 
-    return jsonResponse({ app }, 200, origin)
+    return success({ app }, 200, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to get app'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }
 
@@ -52,7 +52,7 @@ export async function PATCH(
 
     if (!parsed.success) {
       const messages = parsed.error.issues.map((i) => i.message)
-      return errorResponse(messages.join(', '), 400, origin)
+      return fail(messages.join(', '), 400, origin)
     }
 
     const now = new Date().toISOString()
@@ -62,13 +62,13 @@ export async function PATCH(
     } as Partial<App>)
 
     if (!updated) {
-      return errorResponse('App not found', 404, origin)
+      return fail('App not found', 404, origin)
     }
 
-    return jsonResponse({ app: updated }, 200, origin)
+    return success({ app: updated }, 200, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update app'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }
 
@@ -87,12 +87,12 @@ export async function DELETE(
     const { id } = await params
     const deleted = await remove<App>(APPS_FILE, id)
     if (!deleted) {
-      return errorResponse('App not found', 404, origin)
+      return fail('App not found', 404, origin)
     }
 
-    return jsonResponse({ success: true }, 200, origin)
+    return success({ deleted: true }, 200, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete app'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }

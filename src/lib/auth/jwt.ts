@@ -1,11 +1,13 @@
 import { SignJWT, jwtVerify } from 'jose'
 import type { App, AuthUser } from '../auth-models'
+import { getPermissionsForRole } from '../rbac'
 
 export interface AccessTokenPayload {
   sub: string
   email: string
   name: string
   role: string
+  permissions: string[]
   app: string
   iat: number
   exp: number
@@ -20,10 +22,12 @@ export async function signAccessToken(
   app: App
 ): Promise<string> {
   const key = getSecretKey(app.secret)
+  const permissions = await getPermissionsForRole(app.id, user.role)
   return new SignJWT({
     email: user.email,
     name: user.displayName,
     role: user.role,
+    permissions,
     app: app.id,
   })
     .setProtectedHeader({ alg: 'HS256' })

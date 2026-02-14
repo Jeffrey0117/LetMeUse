@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getById, update, remove, PROJECTS_FILE, findByField, ADS_FILE } from '@/lib/storage'
 import { UpdateProjectSchema, type Project } from '@/lib/models'
 import type { Ad } from '@/lib/models'
+import { success, fail } from '@/lib/api-result'
 
 type RouteParams = { params: Promise<{ projectId: string }> }
 
@@ -10,15 +11,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const { projectId } = await params
     const project = await getById<Project>(PROJECTS_FILE, projectId)
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      return fail('Project not found', 404)
     }
-    return NextResponse.json(project)
+    return success(project)
   } catch (error) {
-    console.error('Failed to fetch project:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch project' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to fetch project'
+    return fail(message, 500)
   }
 }
 
@@ -28,10 +26,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const parsed = UpdateProjectSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.issues },
-        { status: 400 }
-      )
+      const messages = parsed.error.issues.map((i) => i.message)
+      return fail(messages.join(', '), 400)
     }
 
     const updated = await update<Project>(PROJECTS_FILE, projectId, {
@@ -40,15 +36,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } as Partial<Project>)
 
     if (!updated) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      return fail('Project not found', 404)
     }
-    return NextResponse.json(updated)
+    return success(updated)
   } catch (error) {
-    console.error('Failed to update project:', error)
-    return NextResponse.json(
-      { error: 'Failed to update project' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to update project'
+    return fail(message, 500)
   }
 }
 
@@ -56,25 +49,18 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { projectId } = await params
 
-    // Check for associated ads
     const ads = await findByField<Ad>(ADS_FILE, 'projectId', projectId)
     if (ads.length > 0) {
-      return NextResponse.json(
-        { error: `Cannot delete project with ${ads.length} associated ad(s). Delete ads first.` },
-        { status: 409 }
-      )
+      return fail(`Cannot delete project with ${ads.length} associated ad(s). Delete ads first.`, 409)
     }
 
     const deleted = await remove<Project>(PROJECTS_FILE, projectId)
     if (!deleted) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      return fail('Project not found', 404)
     }
-    return NextResponse.json({ success: true })
+    return success({ deleted: true })
   } catch (error) {
-    console.error('Failed to delete project:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete project' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to delete project'
+    return fail(message, 500)
   }
 }

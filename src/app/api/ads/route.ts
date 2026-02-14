@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAll, create, findByField, getById, ADS_FILE, PROJECTS_FILE } from '@/lib/storage'
 import { CreateAdSchema, type Ad, type Project } from '@/lib/models'
 import { generateAdId } from '@/lib/id'
+import { success, fail } from '@/lib/api-result'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,17 +11,14 @@ export async function GET(request: NextRequest) {
 
     if (projectId) {
       const ads = await findByField<Ad>(ADS_FILE, 'projectId', projectId)
-      return NextResponse.json(ads)
+      return success(ads)
     }
 
     const ads = await getAll<Ad>(ADS_FILE)
-    return NextResponse.json(ads)
+    return success(ads)
   } catch (error) {
-    console.error('Failed to fetch ads:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch ads' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to fetch ads'
+    return fail(message, 500)
   }
 }
 
@@ -29,19 +27,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = CreateAdSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.issues },
-        { status: 400 }
-      )
+      const messages = parsed.error.issues.map((i) => i.message)
+      return fail(messages.join(', '), 400)
     }
 
-    // Verify project exists
     const project = await getById<Project>(PROJECTS_FILE, parsed.data.projectId)
     if (!project) {
-      return NextResponse.json(
-        { error: 'Project not found' },
-        { status: 404 }
-      )
+      return fail('Project not found', 404)
     }
 
     const now = new Date().toISOString()
@@ -80,12 +72,9 @@ export async function POST(request: NextRequest) {
     }
 
     await create(ADS_FILE, ad)
-    return NextResponse.json(ad, { status: 201 })
+    return success(ad, 201)
   } catch (error) {
-    console.error('Failed to create ad:', error)
-    return NextResponse.json(
-      { error: 'Failed to create ad' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to create ad'
+    return fail(message, 500)
   }
 }

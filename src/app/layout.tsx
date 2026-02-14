@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'AdMan',
-  description: 'Self-hosted advertisement management platform',
+  title: 'LetMeUse',
+  description: 'Embeddable SaaS infrastructure platform',
 }
 
 export default function RootLayout({
