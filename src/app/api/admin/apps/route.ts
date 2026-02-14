@@ -4,7 +4,7 @@ import { CreateAppSchema, type App } from '@/lib/auth-models'
 import { getAll, create, APPS_FILE } from '@/lib/storage'
 import { generateAppId, generateAppSecret } from '@/lib/id'
 import { requireAdmin } from '@/lib/auth/middleware'
-import { corsResponse, jsonResponse, errorResponse } from '@/lib/auth/middleware'
+import { corsResponse, success, fail } from '@/lib/api-result'
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
     }
 
     const apps = await getAll<App>(APPS_FILE)
-    return jsonResponse({ apps }, 200, origin)
+    return success({ apps }, 200, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to list apps'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       const messages = parsed.error.issues.map((i) => i.message)
-      return errorResponse(messages.join(', '), 400, origin)
+      return fail(messages.join(', '), 400, origin)
     }
 
     const now = new Date().toISOString()
@@ -56,9 +56,9 @@ export async function POST(request: NextRequest) {
     }
 
     await create<App>(APPS_FILE, app)
-    return jsonResponse({ app }, 201, origin)
+    return success({ app }, 201, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to create app'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }

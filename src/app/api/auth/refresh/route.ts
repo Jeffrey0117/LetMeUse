@@ -4,7 +4,9 @@ import type { App, AuthUser, RefreshToken } from '@/lib/auth-models'
 import { getAll, getById, create, remove, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import { generateRefreshTokenId } from '@/lib/id'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
-import { corsResponse, jsonResponse, errorResponse } from '@/lib/auth/middleware'
+import { corsResponse, success, fail } from '@/lib/api-result'
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
+import { removeSessionByRefreshToken, createSession } from '@/lib/session'
 
 const RefreshRequestSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
@@ -17,12 +19,17 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin')
 
+  const rateCheck = checkRateLimit(request, 'refresh', RATE_LIMITS.refresh)
+  if (!rateCheck.allowed) {
+    return rateLimitResponse(rateCheck.retryAfterSeconds!, origin)
+  }
+
   try {
     const body = await request.json()
     const parsed = RefreshRequestSchema.safeParse(body)
 
     if (!parsed.success) {
-      return errorResponse('Refresh token is required', 400, origin)
+      return fail('Refresh token is required', 400, origin)
     }
 
     const { refreshToken: tokenString } = parsed.data
@@ -31,25 +38,25 @@ export async function POST(request: NextRequest) {
     const storedToken = tokens.find((t) => t.token === tokenString)
 
     if (!storedToken) {
-      return errorResponse('Invalid refresh token', 401, origin)
+      return fail('Invalid refresh token', 401, origin)
     }
 
     if (new Date(storedToken.expiresAt) < new Date()) {
       await remove<RefreshToken>(REFRESH_TOKENS_FILE, storedToken.id)
-      return errorResponse('Refresh token expired', 401, origin)
+      return fail('Refresh token expired', 401, origin)
     }
 
     const user = await getById<AuthUser>(USERS_FILE, storedToken.userId)
     if (!user || user.disabled) {
-      return errorResponse('User not found or disabled', 401, origin)
+      return fail('User not found or disabled', 401, origin)
     }
 
     const app = await getById<App>(APPS_FILE, storedToken.appId)
     if (!app) {
-      return errorResponse('App not found', 401, origin)
+      return fail('App not found', 401, origin)
     }
 
-    // Rotate: delete old, create new
+    await removeSessionByRefreshToken(storedToken.id)
     await remove<RefreshToken>(REFRESH_TOKENS_FILE, storedToken.id)
 
     const accessToken = await signAccessToken(user, app)
@@ -67,16 +74,17 @@ export async function POST(request: NextRequest) {
 
     await create<RefreshToken>(REFRESH_TOKENS_FILE, newRefreshToken)
 
-    return jsonResponse(
-      {
-        accessToken,
-        refreshToken: newRefreshTokenJWT,
-      },
-      200,
-      origin
-    )
+    await createSession({
+      userId: user.id,
+      appId: app.id,
+      refreshTokenId: newRefreshToken.id,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+      userAgent: request.headers.get('user-agent') ?? undefined,
+    })
+
+    return success({ accessToken, refreshToken: newRefreshTokenJWT }, 200, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Token refresh failed'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }

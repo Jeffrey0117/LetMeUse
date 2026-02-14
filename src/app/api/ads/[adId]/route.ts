@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getById, update, remove, ADS_FILE } from '@/lib/storage'
 import { UpdateAdSchema, type Ad } from '@/lib/models'
+import { success, fail } from '@/lib/api-result'
 
 type RouteParams = { params: Promise<{ adId: string }> }
 
@@ -9,15 +10,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const { adId } = await params
     const ad = await getById<Ad>(ADS_FILE, adId)
     if (!ad) {
-      return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
+      return fail('Ad not found', 404)
     }
-    return NextResponse.json(ad)
+    return success(ad)
   } catch (error) {
-    console.error('Failed to fetch ad:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch ad' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to fetch ad'
+    return fail(message, 500)
   }
 }
 
@@ -27,15 +25,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const parsed = UpdateAdSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.issues },
-        { status: 400 }
-      )
+      const messages = parsed.error.issues.map((i) => i.message)
+      return fail(messages.join(', '), 400)
     }
 
     const existing = await getById<Ad>(ADS_FILE, adId)
     if (!existing) {
-      return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
+      return fail('Ad not found', 404)
     }
 
     const updates: Partial<Ad> = {
@@ -48,15 +44,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const updated = await update<Ad>(ADS_FILE, adId, updates)
     if (!updated) {
-      return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
+      return fail('Ad not found', 404)
     }
-    return NextResponse.json(updated)
+    return success(updated)
   } catch (error) {
-    console.error('Failed to update ad:', error)
-    return NextResponse.json(
-      { error: 'Failed to update ad' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to update ad'
+    return fail(message, 500)
   }
 }
 
@@ -65,14 +58,11 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const { adId } = await params
     const deleted = await remove<Ad>(ADS_FILE, adId)
     if (!deleted) {
-      return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
+      return fail('Ad not found', 404)
     }
-    return NextResponse.json({ success: true })
+    return success({ deleted: true })
   } catch (error) {
-    console.error('Failed to delete ad:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete ad' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to delete ad'
+    return fail(message, 500)
   }
 }

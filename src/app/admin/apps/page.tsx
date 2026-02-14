@@ -3,12 +3,24 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useLang } from '@/components/layout/lang-provider'
 
+interface OAuthConfig {
+  clientId: string
+  clientSecret: string
+  enabled: boolean
+}
+
+interface OAuthProviders {
+  google?: OAuthConfig
+  github?: OAuthConfig
+}
+
 interface AppItem {
   id: string
   name: string
   secret: string
   domains: string[]
   webhookUrl?: string
+  oauthProviders?: OAuthProviders
   createdAt: string
 }
 
@@ -21,8 +33,10 @@ export default function AdminAppsPage() {
   const [newDomains, setNewDomains] = useState('')
   const [creating, setCreating] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [editingOAuth, setEditingOAuth] = useState<string | null>(null)
+  const [savingOAuth, setSavingOAuth] = useState(false)
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('adman_admin_token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('lmu_admin_token') : null
 
   const fetchApps = useCallback(async () => {
     if (!token) return
@@ -31,7 +45,7 @@ export default function AdminAppsPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
-      setApps(data.apps ?? [])
+      setApps(data.data?.apps ?? [])
     } catch {
       // ignore
     } finally {
@@ -58,8 +72,8 @@ export default function AdminAppsPage() {
         body: JSON.stringify({ name: newName, domains }),
       })
       const data = await res.json()
-      if (data.app) {
-        setApps((prev) => [...prev, data.app])
+      if (data.data?.app) {
+        setApps((prev) => [...prev, data.data.app])
         setNewName('')
         setNewDomains('')
         setShowCreate(false)
@@ -82,6 +96,27 @@ export default function AdminAppsPage() {
       setApps((prev) => prev.filter((a) => a.id !== id))
     } catch {
       // ignore
+    }
+  }
+
+  async function saveOAuth(appId: string, providers: OAuthProviders) {
+    if (!token) return
+    setSavingOAuth(true)
+    try {
+      const res = await fetch(`/api/admin/apps/${appId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ oauthProviders: providers }),
+      })
+      const data = await res.json()
+      if (data.data?.app) {
+        setApps((prev) => prev.map((a) => (a.id === appId ? data.data.app : a)))
+      }
+      setEditingOAuth(null)
+    } catch {
+      // ignore
+    } finally {
+      setSavingOAuth(false)
     }
   }
 
@@ -212,6 +247,39 @@ export default function AdminAppsPage() {
                 </div>
               )}
 
+              {/* OAuth Configuration */}
+              <div className="mt-3 pt-3 border-t border-zinc-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-500 text-xs font-medium">OAuth Providers</span>
+                  <button
+                    onClick={() => setEditingOAuth(editingOAuth === app.id ? null : app.id)}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    {editingOAuth === app.id ? t('projects.cancel') : t('projects.edit')}
+                  </button>
+                </div>
+
+                {editingOAuth !== app.id ? (
+                  <div className="flex gap-2 mt-2">
+                    <OAuthBadge
+                      provider="Google"
+                      enabled={app.oauthProviders?.google?.enabled ?? false}
+                    />
+                    <OAuthBadge
+                      provider="GitHub"
+                      enabled={app.oauthProviders?.github?.enabled ?? false}
+                    />
+                  </div>
+                ) : (
+                  <OAuthEditForm
+                    app={app}
+                    saving={savingOAuth}
+                    onSave={(providers) => saveOAuth(app.id, providers)}
+                    onCancel={() => setEditingOAuth(null)}
+                  />
+                )}
+              </div>
+
               <div className="mt-3 pt-3 border-t border-zinc-100">
                 <span className="text-zinc-500 text-xs">{t('admin.apps.scriptTag')}</span>
                 <code className="block bg-zinc-50 px-2 py-1.5 rounded text-xs font-mono mt-1 break-all">
@@ -221,6 +289,133 @@ export default function AdminAppsPage() {
             </div>
           ))
         )}
+      </div>
+    </div>
+  )
+}
+
+function OAuthBadge({ provider, enabled }: { provider: string; enabled: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+        enabled
+          ? 'bg-green-50 text-green-700 border border-green-200'
+          : 'bg-zinc-50 text-zinc-400 border border-zinc-200'
+      }`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${enabled ? 'bg-green-500' : 'bg-zinc-300'}`} />
+      {provider}
+    </span>
+  )
+}
+
+function OAuthEditForm({
+  app,
+  saving,
+  onSave,
+  onCancel,
+}: {
+  app: AppItem
+  saving: boolean
+  onSave: (providers: OAuthProviders) => void
+  onCancel: () => void
+}) {
+  const [googleClientId, setGoogleClientId] = useState(app.oauthProviders?.google?.clientId ?? '')
+  const [googleClientSecret, setGoogleClientSecret] = useState(app.oauthProviders?.google?.clientSecret ?? '')
+  const [googleEnabled, setGoogleEnabled] = useState(app.oauthProviders?.google?.enabled ?? false)
+  const [githubClientId, setGithubClientId] = useState(app.oauthProviders?.github?.clientId ?? '')
+  const [githubClientSecret, setGithubClientSecret] = useState(app.oauthProviders?.github?.clientSecret ?? '')
+  const [githubEnabled, setGithubEnabled] = useState(app.oauthProviders?.github?.enabled ?? false)
+
+  function handleSave() {
+    onSave({
+      google: { clientId: googleClientId, clientSecret: googleClientSecret, enabled: googleEnabled },
+      github: { clientId: githubClientId, clientSecret: githubClientSecret, enabled: githubEnabled },
+    })
+  }
+
+  const inputClass = 'w-full px-2.5 py-1.5 border border-zinc-200 rounded text-xs outline-none focus:border-zinc-400 font-mono'
+
+  return (
+    <div className="mt-3 space-y-4">
+      {/* Google */}
+      <div className="bg-zinc-50 rounded-lg p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-zinc-700">Google OAuth</span>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={googleEnabled}
+              onChange={(e) => setGoogleEnabled(e.target.checked)}
+              className="w-3.5 h-3.5 rounded"
+            />
+            <span className="text-xs text-zinc-600">Enabled</span>
+          </label>
+        </div>
+        <div className="space-y-2">
+          <input
+            type="text"
+            placeholder="Client ID"
+            value={googleClientId}
+            onChange={(e) => setGoogleClientId(e.target.value)}
+            className={inputClass}
+          />
+          <input
+            type="password"
+            placeholder="Client Secret"
+            value={googleClientSecret}
+            onChange={(e) => setGoogleClientSecret(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      {/* GitHub */}
+      <div className="bg-zinc-50 rounded-lg p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-zinc-700">GitHub OAuth</span>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={githubEnabled}
+              onChange={(e) => setGithubEnabled(e.target.checked)}
+              className="w-3.5 h-3.5 rounded"
+            />
+            <span className="text-xs text-zinc-600">Enabled</span>
+          </label>
+        </div>
+        <div className="space-y-2">
+          <input
+            type="text"
+            placeholder="Client ID"
+            value={githubClientId}
+            onChange={(e) => setGithubClientId(e.target.value)}
+            className={inputClass}
+          />
+          <input
+            type="password"
+            placeholder="Client Secret"
+            value={githubClientSecret}
+            onChange={(e) => setGithubClientSecret(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-3 py-1.5 text-xs bg-zinc-900 text-white rounded-md hover:bg-zinc-800 disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save OAuth Settings'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 text-xs border border-zinc-200 rounded-md hover:bg-zinc-50"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   )

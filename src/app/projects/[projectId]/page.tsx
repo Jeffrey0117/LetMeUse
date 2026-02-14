@@ -46,12 +46,14 @@ export default function ProjectDetailPage() {
       setLoading(false)
       return
     }
-    const projData = await projRes.json()
+    const projJson = await projRes.json()
+    const projData = projJson.data
     setProject(projData)
     setName(projData.name)
     setDescription(projData.description)
     setDomain(projData.domain ?? '')
-    setAds(await adsRes.json())
+    const adsJson = await adsRes.json()
+    setAds(adsJson.data ?? [])
     setLoading(false)
   }, [params.projectId])
 

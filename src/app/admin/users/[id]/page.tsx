@@ -28,7 +28,7 @@ export default function AdminUserDetailPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('adman_admin_token') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('lmu_admin_token') : null
 
   const fetchUser = useCallback(async () => {
     if (!token) return
@@ -37,7 +37,7 @@ export default function AdminUserDetailPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
-      setUser(data.user ?? null)
+      setUser(data.data?.user ?? null)
     } catch {
       // ignore
     } finally {
@@ -60,7 +60,7 @@ export default function AdminUserDetailPage() {
         body: JSON.stringify({ role: newRole }),
       })
       const data = await res.json()
-      if (data.user) setUser(data.user)
+      if (data.data?.user) setUser(data.data.user)
     } catch {
       // ignore
     } finally {
@@ -78,7 +78,7 @@ export default function AdminUserDetailPage() {
         body: JSON.stringify({ disabled: !user.disabled }),
       })
       const data = await res.json()
-      if (data.user) setUser(data.user)
+      if (data.data?.user) setUser(data.data.user)
     } catch {
       // ignore
     } finally {

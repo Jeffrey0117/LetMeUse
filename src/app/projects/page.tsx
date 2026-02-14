@@ -33,8 +33,10 @@ export default function ProjectsPage() {
       fetch('/api/projects'),
       fetch('/api/ads'),
     ])
-    setProjects(await projRes.json())
-    setAds(await adsRes.json())
+    const projJson = await projRes.json()
+    const adsJson = await adsRes.json()
+    setProjects(projJson.data ?? [])
+    setAds(adsJson.data ?? [])
     setLoading(false)
   }, [])
 

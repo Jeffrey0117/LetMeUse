@@ -204,8 +204,24 @@ const translations = {
   'auth.registerBtn': { en: 'Create Account', zh: '建立帳號' },
   'auth.switchToRegister': { en: "Don't have an account? Sign up", zh: '沒有帳號？註冊' },
   'auth.switchToLogin': { en: 'Already have an account? Sign in', zh: '已有帳號？登入' },
+  'auth.orContinueWith': { en: 'or continue with', zh: '或使用以下方式' },
   'auth.loginTitle': { en: 'Sign in to your account', zh: '登入您的帳號' },
   'auth.registerTitle': { en: 'Create a new account', zh: '建立新帳號' },
+  'auth.forgotPassword': { en: 'Forgot password?', zh: '忘記密碼？' },
+  'auth.resetPasswordTitle': { en: 'Set a new password', zh: '設定新密碼' },
+  'auth.newPassword': { en: 'New Password', zh: '新密碼' },
+  'auth.confirmPassword': { en: 'Confirm Password', zh: '確認密碼' },
+  'auth.passwordMismatch': { en: 'Passwords do not match', zh: '兩次密碼不一致' },
+  'auth.resetPasswordBtn': { en: 'Reset Password', zh: '重設密碼' },
+  'auth.passwordResetSuccess': { en: 'Password reset successful!', zh: '密碼重設成功！' },
+  'auth.redirectingToLogin': { en: 'Redirecting to login...', zh: '正在跳轉到登入頁面...' },
+  'auth.invalidResetLink': { en: 'Invalid or missing reset link.', zh: '無效或缺少重設連結。' },
+  'auth.forgotPasswordTitle': { en: 'Forgot your password?', zh: '忘記密碼？' },
+  'auth.forgotPasswordDesc': { en: 'Enter your email to receive a reset link.', zh: '輸入您的信箱以接收重設連結。' },
+  'auth.sendResetLink': { en: 'Send Reset Link', zh: '發送重設連結' },
+  'auth.resetLinkSent': { en: 'If the email exists, a reset link has been sent.', zh: '若信箱存在，重設連結已發送。' },
+  'auth.backToLogin': { en: 'Back to login', zh: '返回登入' },
+  'auth.emailVerified': { en: 'Email verified! You can now sign in.', zh: '信箱已驗證！您現在可以登入。' },
 
   // Admin Nav
   'nav.admin': { en: 'Admin', zh: '管理' },
@@ -264,6 +280,41 @@ const translations = {
   // Admin Pagination
   'admin.pagination.prev': { en: 'Previous', zh: '上一頁' },
   'admin.pagination.next': { en: 'Next', zh: '下一頁' },
+
+  // Admin Audit
+  'admin.nav.audit': { en: 'Audit Log', zh: '操作紀錄' },
+  'admin.audit.title': { en: 'Audit Log', zh: '操作紀錄' },
+  'admin.audit.empty': { en: 'No audit entries yet.', zh: '尚無操作紀錄。' },
+  'admin.audit.action': { en: 'Action', zh: '操作' },
+  'admin.audit.actor': { en: 'Actor', zh: '執行者' },
+  'admin.audit.target': { en: 'Target', zh: '目標' },
+  'admin.audit.time': { en: 'Time', zh: '時間' },
+  'admin.audit.details': { en: 'Details', zh: '詳情' },
+  'admin.audit.ip': { en: 'IP', zh: 'IP' },
+
+  // Admin Roles
+  'admin.nav.roles': { en: 'Roles', zh: '角色' },
+  'admin.roles.title': { en: 'Role Management', zh: '角色管理' },
+  'admin.roles.create': { en: '+ New Role', zh: '+ 新增角色' },
+  'admin.roles.name': { en: 'Role Name', zh: '角色名稱' },
+  'admin.roles.description': { en: 'Description', zh: '描述' },
+  'admin.roles.permissions': { en: 'Permissions', zh: '權限' },
+  'admin.roles.createBtn': { en: 'Create Role', zh: '建立角色' },
+  'admin.roles.empty': { en: 'No custom roles yet.', zh: '尚無自訂角色。' },
+  'admin.roles.delete': { en: 'Delete', zh: '刪除' },
+  'admin.roles.edit': { en: 'Edit', zh: '編輯' },
+  'admin.roles.save': { en: 'Save', zh: '儲存' },
+  'admin.roles.cancel': { en: 'Cancel', zh: '取消' },
+  'admin.roles.builtin': { en: 'Built-in', zh: '內建' },
+  'admin.roles.custom': { en: 'Custom', zh: '自訂' },
+  'admin.roles.confirmDelete': { en: 'Are you sure you want to delete this role?', zh: '確定要刪除此角色？' },
+
+  // Module labels
+  'module.ads': { en: 'Ads', zh: '廣告' },
+  'module.auth': { en: 'Auth', zh: '認證' },
+  'module.widgets': { en: 'Widgets', zh: '組件' },
+  'module.analytics': { en: 'Analytics', zh: '分析' },
+  'module.billing': { en: 'Billing', zh: '金流' },
 } as const
 
 export type TranslationKey = keyof typeof translations

@@ -1,12 +1,12 @@
 {
-  "name": "adman",
+  "name": "letmeuse",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "pnpm build:embed && pnpm build:sdk && next build",
-    "build:embed": "npx esbuild src/embed/adman-embed.ts --bundle --minify --format=iife --outfile=public/embed/adman.js",
-    "build:sdk": "npx esbuild src/sdk/adman-sdk.ts --bundle --minify --format=iife --outfile=public/sdk.js",
+    "build:embed": "npx esbuild src/embed/letmeuse-embed.ts --bundle --minify --format=iife --outfile=public/embed/letmeuse.js",
+    "build:sdk": "npx esbuild src/sdk/letmeuse-sdk.ts --bundle --minify --format=iife --outfile=public/letmeuse.js",
     "start": "next start",
     "lint": "eslint",
     "seed": "npx tsx scripts/seed.ts"

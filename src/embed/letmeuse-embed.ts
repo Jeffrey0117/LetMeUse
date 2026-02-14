@@ -15,10 +15,10 @@
 
   const BASE_URL = resolveBaseUrl()
 
-  const containers = document.querySelectorAll<HTMLElement>('[data-adman-id]')
+  const containers = document.querySelectorAll<HTMLElement>('[data-lmu-id]')
 
   containers.forEach(async (container) => {
-    const adId = container.getAttribute('data-adman-id')
+    const adId = container.getAttribute('data-lmu-id')
     if (!adId) return
 
     try {
@@ -98,7 +98,7 @@
   }
 
   function dismissBtn(color: string): string {
-    return `<button onclick="this.closest('[data-adman-wrapper]').remove()" style="background:none;border:none;cursor:pointer;font-size:1.125em;line-height:1;opacity:0.7;padding:4px 8px;color:${color}">&#10005;</button>`
+    return `<button onclick="this.closest('[data-lmu-wrapper]').remove()" style="background:none;border:none;cursor:pointer;font-size:1.125em;line-height:1;opacity:0.7;padding:4px 8px;color:${color}">&#10005;</button>`
   }
 
   function imageHtml(ad: Record<string, unknown>, maxHeight: string, extraStyle = ''): string {
@@ -142,7 +142,7 @@
     const style = ad.style as Record<string, string | number>
     const mobile = isMobile()
     const wrapper = document.createElement('div')
-    wrapper.setAttribute('data-adman-wrapper', '')
+    wrapper.setAttribute('data-lmu-wrapper', '')
 
     Object.assign(wrapper.style, {
       ...baseStyles(style, ad.backgroundImageUrl as string | undefined),
@@ -186,7 +186,7 @@
     const style = ad.style as Record<string, string | number>
     const mobile = isMobile()
     const wrapper = document.createElement('div')
-    wrapper.setAttribute('data-adman-wrapper', '')
+    wrapper.setAttribute('data-lmu-wrapper', '')
 
     Object.assign(wrapper.style, {
       ...baseStyles(style, ad.backgroundImageUrl as string | undefined),
@@ -225,7 +225,7 @@
     const style = ad.style as Record<string, string | number>
     const mobile = isMobile()
     const wrapper = document.createElement('div')
-    wrapper.setAttribute('data-adman-wrapper', '')
+    wrapper.setAttribute('data-lmu-wrapper', '')
 
     Object.assign(wrapper.style, {
       ...baseStyles(style, ad.backgroundImageUrl as string | undefined),
@@ -252,7 +252,7 @@
     const style = ad.style as Record<string, string | number>
     const mobile = isMobile()
     const backdrop = document.createElement('div')
-    backdrop.setAttribute('data-adman-wrapper', '')
+    backdrop.setAttribute('data-lmu-wrapper', '')
 
     Object.assign(backdrop.style, {
       position: 'fixed',
@@ -304,7 +304,7 @@
     const style = ad.style as Record<string, string | number>
     const mobile = isMobile()
     const wrapper = document.createElement('div')
-    wrapper.setAttribute('data-adman-wrapper', '')
+    wrapper.setAttribute('data-lmu-wrapper', '')
 
     Object.assign(wrapper.style, {
       ...baseStyles(style, ad.backgroundImageUrl as string | undefined),
@@ -338,7 +338,7 @@
     const style = ad.style as Record<string, string | number>
     const config = (ad.widgetConfig || {}) as Record<string, unknown>
     const wrapper = document.createElement('div')
-    wrapper.setAttribute('data-adman-wrapper', '')
+    wrapper.setAttribute('data-lmu-wrapper', '')
 
     Object.assign(wrapper.style, {
       ...baseStyles(style),
@@ -367,7 +367,7 @@
       html += `<p style="margin:0 0 16px;font-size:14px;opacity:0.7">${escapeHtml(subtitle)}</p>`
     }
 
-    html += `<form data-adman-form action="${escapeHtml(submitUrl)}" data-redirect="${escapeHtml(successRedirect)}" style="display:flex;flex-direction:column;gap:12px">`
+    html += `<form data-lmu-form action="${escapeHtml(submitUrl)}" data-redirect="${escapeHtml(successRedirect)}" style="display:flex;flex-direction:column;gap:12px">`
     for (const field of fields) {
       const label = escapeHtml(field.label as string)
       const req = field.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : ''
@@ -406,7 +406,7 @@
     container.appendChild(wrapper)
 
     // Form submission handler
-    const form = wrapper.querySelector('[data-adman-form]') as HTMLFormElement | null
+    const form = wrapper.querySelector('[data-lmu-form]') as HTMLFormElement | null
     if (form && submitUrl) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault()
@@ -431,7 +431,7 @@
     const style = ad.style as Record<string, string | number>
     const config = (ad.widgetConfig || {}) as Record<string, unknown>
     const wrapper = document.createElement('div')
-    wrapper.setAttribute('data-adman-wrapper', '')
+    wrapper.setAttribute('data-lmu-wrapper', '')
 
     Object.assign(wrapper.style, {
       ...baseStyles(style),
@@ -455,7 +455,7 @@
       html += `<p style="margin:0 0 16px;font-size:14px;opacity:0.7">${escapeHtml(subtitle)}</p>`
     }
 
-    html += `<form data-adman-form action="${escapeHtml(submitUrl)}" data-success="${successMessage}" style="display:flex;flex-direction:column;gap:12px">`
+    html += `<form data-lmu-form action="${escapeHtml(submitUrl)}" data-success="${successMessage}" style="display:flex;flex-direction:column;gap:12px">`
     for (const field of fields) {
       const label = escapeHtml(field.label as string)
       const req = field.required ? '<span style="color:#ef4444;margin-left:2px">*</span>' : ''
@@ -463,7 +463,7 @@
       html += `<label style="display:block;font-size:13px;font-weight:500;margin-bottom:4px">${label}${req}</label>`
 
       if (field.type === 'rating') {
-        html += `<div data-adman-rating="${field.name}" style="display:flex;gap:4px">`
+        html += `<div data-lmu-rating="${field.name}" style="display:flex;gap:4px">`
         for (let i = 1; i <= 5; i++) {
           html += `<span data-star="${i}" style="font-size:24px;cursor:pointer;opacity:0.3;color:#f59e0b">&#9733;</span>`
         }
@@ -483,7 +483,7 @@
     container.appendChild(wrapper)
 
     // Star rating interaction
-    const ratingContainers = wrapper.querySelectorAll<HTMLElement>('[data-adman-rating]')
+    const ratingContainers = wrapper.querySelectorAll<HTMLElement>('[data-lmu-rating]')
     ratingContainers.forEach((rc) => {
       const stars = rc.querySelectorAll<HTMLElement>('[data-star]')
       const hidden = rc.querySelector('input[type="hidden"]') as HTMLInputElement
@@ -500,7 +500,7 @@
     })
 
     // Form submission handler
-    const form = wrapper.querySelector('[data-adman-form]') as HTMLFormElement | null
+    const form = wrapper.querySelector('[data-lmu-form]') as HTMLFormElement | null
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault()
@@ -517,7 +517,7 @@
           }
         }
         // Show success message
-        const formEl = wrapper.querySelector('[data-adman-form]')
+        const formEl = wrapper.querySelector('[data-lmu-form]')
         if (formEl) {
           formEl.innerHTML = `<div style="text-align:center;padding:24px 0"><p style="font-size:1.25em;font-weight:600;margin:0 0 8px">&#10003;</p><p style="margin:0;font-size:14px;opacity:0.85">${successMessage}</p></div>`
         }

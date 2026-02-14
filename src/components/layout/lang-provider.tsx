@@ -19,7 +19,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('en')
 
   useEffect(() => {
-    const saved = localStorage.getItem('adman-locale') as Locale | null
+    const saved = localStorage.getItem('lmu-locale') as Locale | null
     if (saved === 'en' || saved === 'zh') {
       setLocaleState(saved)
     }
@@ -27,7 +27,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
-    localStorage.setItem('adman-locale', newLocale)
+    localStorage.setItem('lmu-locale', newLocale)
   }, [])
 
   const tFn = useCallback(

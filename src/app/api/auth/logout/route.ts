@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server'
 import type { RefreshToken } from '@/lib/auth-models'
 import { getAll, remove, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import { authenticateRequest } from '@/lib/auth/middleware'
-import { corsResponse, jsonResponse, errorResponse } from '@/lib/auth/middleware'
+import { corsResponse, success, fail } from '@/lib/api-result'
+import { revokeAllUserSessions } from '@/lib/session'
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
@@ -25,9 +26,11 @@ export async function POST(request: NextRequest) {
       await remove<RefreshToken>(REFRESH_TOKENS_FILE, token.id)
     }
 
-    return jsonResponse({ success: true }, 200, origin)
+    await revokeAllUserSessions(authResult.payload.sub)
+
+    return success({ loggedOut: true }, 200, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Logout failed'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }

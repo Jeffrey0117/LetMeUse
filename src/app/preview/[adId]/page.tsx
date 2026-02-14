@@ -87,10 +87,10 @@ export default function PreviewPage() {
         </h2>
         <pre className="rounded-md bg-zinc-100 p-4 text-sm text-zinc-700 overflow-x-auto">
 {`<!-- Place this where you want the ad to appear -->
-<div data-adman-id="${ad.id}"></div>
+<div data-lmu-id="${ad.id}"></div>
 
 <!-- Add this before </body> -->
-<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/embed/adman.js"
+<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/embed/letmeuse.js"
   data-base-url="${typeof window !== 'undefined' ? window.location.origin : ''}"></script>`}
         </pre>
       </div>

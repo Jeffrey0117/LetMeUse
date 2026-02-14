@@ -1,0 +1,13 @@
+[
+  {
+    "id": "usr_ECh6tBytG-gr",
+    "appId": "app_yX0u0SiJ",
+    "email": "admin@example.com",
+    "passwordHash": "$2b$10$3CHXosytQ2CYznQ.wNHnmeX5HSJa4IYe8dfFJGCSlOS/mlAQ3ouBO",
+    "displayName": "Admin",
+    "role": "admin",
+    "disabled": false,
+    "createdAt": "2026-02-13T18:13:15.085Z",
+    "updatedAt": "2026-02-13T18:13:15.085Z"
+  }
+]

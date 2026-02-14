@@ -1,18 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getAll, create, PROJECTS_FILE } from '@/lib/storage'
 import { CreateProjectSchema, type Project } from '@/lib/models'
 import { generateProjectId } from '@/lib/id'
+import { success, fail } from '@/lib/api-result'
 
 export async function GET() {
   try {
     const projects = await getAll<Project>(PROJECTS_FILE)
-    return NextResponse.json(projects)
+    return success(projects)
   } catch (error) {
-    console.error('Failed to fetch projects:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch projects' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to fetch projects'
+    return fail(message, 500)
   }
 }
 
@@ -21,10 +19,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = CreateProjectSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: parsed.error.issues },
-        { status: 400 }
-      )
+      const messages = parsed.error.issues.map((i) => i.message)
+      return fail(messages.join(', '), 400)
     }
 
     const now = new Date().toISOString()
@@ -38,12 +34,9 @@ export async function POST(request: NextRequest) {
     }
 
     await create(PROJECTS_FILE, project)
-    return NextResponse.json(project, { status: 201 })
+    return success(project, 201)
   } catch (error) {
-    console.error('Failed to create project:', error)
-    return NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Failed to create project'
+    return fail(message, 500)
   }
 }

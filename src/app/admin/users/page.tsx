@@ -29,7 +29,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
 
   const fetchUsers = useCallback(async () => {
-    const token = localStorage.getItem('adman_admin_token')
+    const token = localStorage.getItem('lmu_admin_token')
     if (!token) return
 
     setLoading(true)
@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
-      setUsers(data.users ?? [])
+      setUsers(data.data ?? [])
       setMeta(data.meta ?? { total: 0, page: 1, limit: 20 })
     } catch {
       // ignore

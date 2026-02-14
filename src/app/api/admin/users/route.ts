@@ -4,7 +4,7 @@ import type { AuthUser } from '@/lib/auth-models'
 import { toPublicUser } from '@/lib/auth-models'
 import { getAll, USERS_FILE } from '@/lib/storage'
 import { requireAdmin } from '@/lib/auth/middleware'
-import { corsResponse, jsonResponse, errorResponse } from '@/lib/auth/middleware'
+import { corsResponse, paginated, fail } from '@/lib/api-result'
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
@@ -44,16 +44,13 @@ export async function GET(request: NextRequest) {
     const start = (page - 1) * limit
     const paged = users.slice(start, start + limit)
 
-    return jsonResponse(
-      {
-        users: paged.map(toPublicUser),
-        meta: { total, page, limit },
-      },
-      200,
+    return paginated(
+      { users: paged.map(toPublicUser) },
+      { total, page, limit },
       origin
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to list users'
-    return errorResponse(message, 500, origin)
+    return fail(message, 500, origin)
   }
 }

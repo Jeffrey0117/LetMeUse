@@ -1,0 +1,13 @@
+[
+  {
+    "id": "app_yX0u0SiJ",
+    "name": "letmeuse-demo",
+    "secret": "UEpzMyu5ItZ8Bx6vxqV6H56SzLhnXscO",
+    "domains": [
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ],
+    "createdAt": "2026-02-13T18:13:15.085Z",
+    "updatedAt": "2026-02-13T18:13:15.085Z"
+  }
+]
