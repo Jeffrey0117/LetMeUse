@@ -33,13 +33,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const providerName = provider as OAuthProviderName
 
-    // Parse state to get appId and redirect URL
-    const { appId, redirectUrl } = parseOAuthState(state)
+    // Parse state — need to decode appId first to look up secret for verification
+    const dotIdx = state.lastIndexOf('.')
+    if (dotIdx === -1) return redirectWithError('Invalid OAuth state')
+    const rawPayload = JSON.parse(atob(state.slice(0, dotIdx)))
+    const appId = rawPayload.appId as string
 
     const app = await getById<App>(APPS_FILE, appId)
     if (!app) {
       return redirectWithError('App not found')
     }
+
+    // Verify signature with app secret
+    const { redirectUrl } = await parseOAuthState(state, app.secret)
 
     const providerConfig = app.oauthProviders?.[providerName]
     if (!providerConfig?.enabled) {

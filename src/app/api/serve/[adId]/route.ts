@@ -29,7 +29,6 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(ad, { headers: corsHeaders })
   } catch (error) {
-    console.error('Failed to serve ad:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: corsHeaders }

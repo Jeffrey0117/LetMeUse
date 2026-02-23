@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const filteredWebhooks = appId ? webhookEvents.filter((e) => e.appId === appId) : webhookEvents
     const webhookStats = {
       total: filteredWebhooks.length,
-      success: filteredWebhooks.filter((e) => e.status === 'success').length,
+      delivered: filteredWebhooks.filter((e) => e.status === 'delivered').length,
       failed: filteredWebhooks.filter((e) => e.status === 'failed').length,
     }
 

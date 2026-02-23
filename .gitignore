@@ -34,6 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
+# data (user data, tokens, secrets)
+/data/*.json
+!/data/.gitkeep
+
 # uploads
 /public/uploads/*
 !/public/uploads/.gitkeep

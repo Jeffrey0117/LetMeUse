@@ -26,6 +26,11 @@ function ResetPasswordForm() {
       return
     }
 
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}/.test(password)) {
+      setError(t('auth.passwordTooWeak'))
+      return
+    }
+
     setLoading(true)
     setError('')
 

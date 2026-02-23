@@ -172,19 +172,59 @@ export async function fetchOAuthUserInfo(
   throw new Error(`Unsupported provider: ${provider}`)
 }
 
-// ── Generate state token ────────────────────────────────
+// ── Generate signed state token ─────────────────────────
 
-export function generateOAuthState(appId: string, redirectUrl?: string): string {
-  const payload = JSON.stringify({ appId, redirectUrl, ts: Date.now() })
-  // Base64 encode for URL safety
-  return btoa(payload)
+async function hmacSign(data: string, secret: string): Promise<string> {
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data))
+  return Array.from(new Uint8Array(sig))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
-export function parseOAuthState(state: string): { appId: string; redirectUrl?: string } {
+async function hmacVerify(data: string, signature: string, secret: string): Promise<boolean> {
+  const expected = await hmacSign(data, secret)
+  return expected === signature
+}
+
+export async function generateOAuthState(
+  appId: string,
+  appSecret: string,
+  redirectUrl?: string
+): Promise<string> {
+  const payload = JSON.stringify({ appId, redirectUrl, ts: Date.now() })
+  const b64 = btoa(payload)
+  const sig = await hmacSign(b64, appSecret)
+  return `${b64}.${sig}`
+}
+
+export async function parseOAuthState(
+  state: string,
+  appSecret: string
+): Promise<{ appId: string; redirectUrl?: string }> {
+  const dotIdx = state.lastIndexOf('.')
+  if (dotIdx === -1) throw new Error('Invalid OAuth state format')
+
+  const b64 = state.slice(0, dotIdx)
+  const sig = state.slice(dotIdx + 1)
+
+  const valid = await hmacVerify(b64, sig, appSecret)
+  if (!valid) throw new Error('OAuth state signature invalid')
+
   try {
-    const payload = JSON.parse(atob(state))
+    const payload = JSON.parse(atob(b64))
+    const age = Date.now() - (payload.ts ?? 0)
+    if (age > 10 * 60 * 1000) throw new Error('OAuth state expired')
     return { appId: payload.appId, redirectUrl: payload.redirectUrl }
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('OAuth state')) throw e
     throw new Error('Invalid OAuth state')
   }
 }
