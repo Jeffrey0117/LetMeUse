@@ -5,6 +5,7 @@ import { hashPassword } from '@/lib/auth/password'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
+import { revokeAllUserSessions, revokeAllUserRefreshTokens } from '@/lib/session'
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
@@ -54,6 +55,10 @@ export async function POST(request: NextRequest) {
 
     // Delete the used token
     await remove<VerificationToken>(VERIFICATION_TOKENS_FILE, resetToken.id)
+
+    // Invalidate all sessions and refresh tokens for security
+    await revokeAllUserSessions(resetToken.userId)
+    await revokeAllUserRefreshTokens(resetToken.userId)
 
     // Dispatch webhook
     const app = await getById<App>(APPS_FILE, resetToken.appId)

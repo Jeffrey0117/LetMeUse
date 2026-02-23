@@ -13,6 +13,13 @@ export async function getPlansForApp(appId: string): Promise<Plan[]> {
     .sort((a, b) => a.sortOrder - b.sortOrder)
 }
 
+export async function getAllPlansForApp(appId: string): Promise<Plan[]> {
+  const all = await getAll<Plan>(PLANS_FILE)
+  return all
+    .filter((p) => p.appId === appId)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+}
+
 export async function createPlan(input: unknown): Promise<Plan> {
   const parsed = CreatePlanSchema.parse(input)
   const now = new Date().toISOString()

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return fail(`${provider} OAuth is not configured for this app`, 400)
     }
 
-    const state = generateOAuthState(appId, redirectUrl)
+    const state = await generateOAuthState(appId, app.secret, redirectUrl)
     const authorizeUrl = getOAuthAuthorizeUrl(providerName, providerConfig, appId, state)
 
     return NextResponse.redirect(authorizeUrl)

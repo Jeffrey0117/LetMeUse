@@ -2,7 +2,7 @@ import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { corsResponse, success, fail } from '@/lib/api-result'
-import { getPlansForApp, createPlan } from '@/lib/billing/service'
+import { getAllPlansForApp, createPlan } from '@/lib/billing/service'
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       return fail('appId is required', 400, origin)
     }
 
-    const plans = await getPlansForApp(appId)
+    const plans = await getAllPlansForApp(appId)
     return success({ plans }, 200, origin)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to get plans'

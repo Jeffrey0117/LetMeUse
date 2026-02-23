@@ -30,11 +30,17 @@ export function getAdminNavItems(): NavItem[] {
     items.push({ href: '/admin/users', label: 'admin.nav.users', icon: 'Users' })
     items.push({ href: '/admin/apps', label: 'admin.nav.apps', icon: 'KeyRound' })
     items.push({ href: '/admin/roles', label: 'admin.nav.roles', icon: 'ShieldCheck' })
+    items.push({ href: '/admin/sessions', label: 'admin.nav.sessions', icon: 'Monitor' })
     items.push({ href: '/admin/audit', label: 'admin.nav.audit', icon: 'FileText' })
+    items.push({ href: '/admin/webhooks', label: 'admin.nav.webhooks', icon: 'Webhook' })
+  }
+
+  if (isModuleEnabled('billing')) {
+    items.push({ href: '/admin/plans', label: 'admin.nav.plans', icon: 'CreditCard' })
   }
 
   for (const [, mod] of Object.entries(config.modules)) {
-    if (mod.enabled && mod.adminPath && !['/admin/users', '/admin/apps'].includes(mod.adminPath)) {
+    if (mod.enabled && mod.adminPath && !['/admin/users', '/admin/apps', '/admin/plans'].includes(mod.adminPath)) {
       items.push({ href: mod.adminPath, label: mod.label, icon: mod.icon })
     }
   }

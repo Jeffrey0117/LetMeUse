@@ -50,7 +50,7 @@ const config: LetMeUseConfig = {
       enabled: false,
       label: 'module.billing',
       icon: 'CreditCard',
-      adminPath: '/admin/billing',
+      adminPath: '/admin/plans',
     },
   },
   payment: 'none',

@@ -1,4 +1,5 @@
-import { getAll, create, remove, SESSIONS_FILE } from './storage'
+import { getAll, create, remove, SESSIONS_FILE, REFRESH_TOKENS_FILE } from './storage'
+import type { RefreshToken } from './auth-models'
 import { generateSessionId } from './id'
 
 // ── Session model ───────────────────────────────────────
@@ -79,6 +80,19 @@ export async function revokeAllUserSessions(userId: string, excludeSessionId?: s
   for (const session of sessions) {
     if (excludeSessionId && session.id === excludeSessionId) continue
     await remove<Session>(SESSIONS_FILE, session.id)
+    count++
+  }
+  return count
+}
+
+// ── Revoke all refresh tokens for user ──────────────────
+
+export async function revokeAllUserRefreshTokens(userId: string): Promise<number> {
+  const allTokens = await getAll<RefreshToken>(REFRESH_TOKENS_FILE)
+  const userTokens = allTokens.filter((t) => t.userId === userId)
+  let count = 0
+  for (const token of userTokens) {
+    await remove<RefreshToken>(REFRESH_TOKENS_FILE, token.id)
     count++
   }
   return count

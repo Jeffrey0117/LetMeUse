@@ -30,12 +30,7 @@ async function sendEmail(options: EmailOptions): Promise<void> {
       throw new Error(`Email send failed: ${JSON.stringify(data)}`)
     }
   } else {
-    // Development: log to console
-    console.log(`\n========== EMAIL ==========`)
-    console.log(`To: ${options.to}`)
-    console.log(`Subject: ${options.subject}`)
-    console.log(`Body:\n${options.html}`)
-    console.log(`===========================\n`)
+    // Development: no-op (set RESEND_API_KEY to send real emails)
   }
 }
 

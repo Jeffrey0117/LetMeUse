@@ -501,7 +501,7 @@
             </div>
             <div class="lmu-field">
               <label class="lmu-label">${t('label.password')}</label>
-              <input class="lmu-input" type="password" name="password" required minlength="${isLogin ? 1 : 8}" />
+              <input class="lmu-input" type="password" name="password" required minlength="${isLogin ? 1 : 8}" pattern="${isLogin ? '.*' : '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}'}" title="${isLogin ? '' : 'Min 8 chars, 1 uppercase, 1 lowercase, 1 number'}" />
             </div>
             ${isLogin ? `<div style="text-align:right;margin:-10px 0 8px 0;"><a id="lmu-forgot-pw" style="font-size:12px;color:${accent};cursor:pointer;text-decoration:none;">${t('link.forgotPassword')}</a></div>` : ''}
             <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
