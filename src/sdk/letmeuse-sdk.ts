@@ -4,7 +4,7 @@
  *
  * Attributes:
  *   data-app-id    — Required. Your app ID from LetMeUse admin panel.
- *   data-theme     — "light" (default) or "dark"
+ *   data-theme     — "light" (default), "dark", or "auto"
  *   data-accent    — Accent color hex (default: "#2563eb")
  *   data-locale    — "en" (default) or "zh"
  *   data-mode      — "modal" (default) or "redirect"
@@ -17,7 +17,7 @@
   const scriptTag = (document.currentScript
     ?? document.querySelector('script[src*="/letmeuse.js"][data-app-id]')) as HTMLScriptElement | null
   const appId = scriptTag?.getAttribute('data-app-id') ?? ''
-  const theme = scriptTag?.getAttribute('data-theme') ?? 'light'
+  const themeSetting = scriptTag?.getAttribute('data-theme') ?? 'light'
   const accent = scriptTag?.getAttribute('data-accent') ?? '#2563eb'
   const locale = (scriptTag?.getAttribute('data-locale') ?? 'en') as 'en' | 'zh'
   const mode = scriptTag?.getAttribute('data-mode') ?? 'modal'
@@ -255,17 +255,131 @@
     fireCallbacks()
   }
 
-  // ── Modal UI (Shadow DOM isolated) ────────────────────
+  // ── Theme Detection & CSS Custom Properties ─────────
 
-  const isDark = theme === 'dark'
-  const bg = isDark ? '#1e1e2e' : '#ffffff'
-  const textColor = isDark ? '#cdd6f4' : '#1e293b'
-  const subtextColor = isDark ? '#a6adc8' : '#64748b'
-  const inputBg = isDark ? '#313244' : '#f8fafc'
-  const inputBorder = isDark ? '#45475a' : '#e2e8f0'
+  interface ThemeColors {
+    bg: string
+    textColor: string
+    subtextColor: string
+    inputBg: string
+    inputBorder: string
+    errorBg: string
+    errorColor: string
+    errorBorder: string
+    hoverBg: string
+    roleBg: string
+    dropdownItemHoverBg: string
+  }
+
+  function getThemeColors(isDark: boolean): ThemeColors {
+    return {
+      bg: isDark ? '#1e1e2e' : '#ffffff',
+      textColor: isDark ? '#cdd6f4' : '#1e293b',
+      subtextColor: isDark ? '#a6adc8' : '#64748b',
+      inputBg: isDark ? '#313244' : '#f8fafc',
+      inputBorder: isDark ? '#45475a' : '#e2e8f0',
+      errorBg: isDark ? '#3b1c1c' : '#fef2f2',
+      errorColor: isDark ? '#f87171' : '#dc2626',
+      errorBorder: isDark ? '#5c2828' : '#fecaca',
+      hoverBg: isDark ? '#3b3b50' : '#f1f5f9',
+      roleBg: isDark ? '#313244' : '#f1f5f9',
+      dropdownItemHoverBg: isDark ? '#313244' : '#f8fafc',
+    }
+  }
+
+  function detectHostPageTheme(): boolean {
+    // 1. Check data-theme attribute on <html> (many frameworks use this)
+    const htmlTheme = document.documentElement.getAttribute('data-theme')
+    if (htmlTheme === 'dark') return true
+    if (htmlTheme === 'light') return false
+
+    // 2. Check for 'dark' class on <html> (Tailwind convention)
+    if (document.documentElement.classList.contains('dark')) return true
+
+    // 3. Fall back to OS preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+
+  function resolveIsDark(): boolean {
+    if (themeSetting === 'auto') return detectHostPageTheme()
+    return themeSetting === 'dark'
+  }
+
+  let currentIsDark = resolveIsDark()
+
+  // Track all active shadow hosts so we can update CSS variables on theme change
+  const activeShadowHosts: Set<HTMLElement> = new Set()
+
+  function applyThemeToHost(host: HTMLElement): void {
+    const colors = getThemeColors(currentIsDark)
+    host.style.setProperty('--lmu-bg', colors.bg)
+    host.style.setProperty('--lmu-text', colors.textColor)
+    host.style.setProperty('--lmu-subtext', colors.subtextColor)
+    host.style.setProperty('--lmu-input-bg', colors.inputBg)
+    host.style.setProperty('--lmu-input-border', colors.inputBorder)
+    host.style.setProperty('--lmu-error-bg', colors.errorBg)
+    host.style.setProperty('--lmu-error-color', colors.errorColor)
+    host.style.setProperty('--lmu-error-border', colors.errorBorder)
+    host.style.setProperty('--lmu-hover-bg', colors.hoverBg)
+    host.style.setProperty('--lmu-role-bg', colors.roleBg)
+    host.style.setProperty('--lmu-dropdown-item-hover-bg', colors.dropdownItemHoverBg)
+  }
+
+  function updateAllShadowHosts(): void {
+    for (const host of activeShadowHosts) {
+      applyThemeToHost(host)
+    }
+  }
+
+  function handleThemeChange(): void {
+    const newIsDark = resolveIsDark()
+    if (newIsDark === currentIsDark) return
+    currentIsDark = newIsDark
+    updateAllShadowHosts()
+  }
+
+  // Set up auto theme detection observers (only for "auto" mode)
+  if (themeSetting === 'auto') {
+    // Watch for data-theme and class attribute changes on <html>
+    const themeObserver = new MutationObserver(() => {
+      handleThemeChange()
+    })
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'class'],
+    })
+
+    // Watch for OS-level prefers-color-scheme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      handleThemeChange()
+    })
+  }
+
+  // ── Styles (using CSS custom properties) ────────────
+
+  const initialColors = getThemeColors(currentIsDark)
+
+  function buildHostThemeVars(colors: ThemeColors): string {
+    return `
+      --lmu-bg: ${colors.bg};
+      --lmu-text: ${colors.textColor};
+      --lmu-subtext: ${colors.subtextColor};
+      --lmu-input-bg: ${colors.inputBg};
+      --lmu-input-border: ${colors.inputBorder};
+      --lmu-error-bg: ${colors.errorBg};
+      --lmu-error-color: ${colors.errorColor};
+      --lmu-error-border: ${colors.errorBorder};
+      --lmu-hover-bg: ${colors.hoverBg};
+      --lmu-role-bg: ${colors.roleBg};
+      --lmu-dropdown-item-hover-bg: ${colors.dropdownItemHoverBg};
+    `
+  }
+
+  const HOST_THEME_VARS = buildHostThemeVars(initialColors)
 
   const MODAL_STYLES = `
     :host {
+      ${HOST_THEME_VARS}
       position: fixed !important;
       inset: 0 !important;
       z-index: 99999 !important;
@@ -280,8 +394,8 @@
       box-sizing: border-box;
     }
     .lmu-card {
-      background: ${bg};
-      color: ${textColor};
+      background: var(--lmu-bg);
+      color: var(--lmu-text);
       border-radius: 16px;
       padding: 36px;
       width: 100%;
@@ -298,7 +412,7 @@
       border: none;
       font-size: 22px;
       cursor: pointer;
-      color: ${subtextColor};
+      color: var(--lmu-subtext);
       width: 32px;
       height: 32px;
       display: flex;
@@ -310,7 +424,7 @@
       padding: 0;
       margin: 0;
     }
-    .lmu-close:hover { background: ${inputBg}; }
+    .lmu-close:hover { background: var(--lmu-input-bg); }
     .lmu-title {
       font-size: 24px;
       font-weight: 700;
@@ -329,7 +443,7 @@
       font-weight: 600;
       margin: 0 0 8px 0;
       padding: 0;
-      color: ${subtextColor};
+      color: var(--lmu-subtext);
       letter-spacing: 0.2px;
     }
     .lmu-input {
@@ -341,13 +455,13 @@
       height: 44px;
       padding: 0 14px;
       margin: 0;
-      border: 1.5px solid ${inputBorder};
+      border: 1.5px solid var(--lmu-input-border);
       border-radius: 10px;
       font-size: 15px;
       font-family: inherit;
       line-height: 44px;
-      background: ${inputBg};
-      color: ${textColor};
+      background: var(--lmu-input-bg);
+      color: var(--lmu-text);
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
@@ -356,7 +470,7 @@
       box-shadow: 0 0 0 3px ${accent}22;
     }
     .lmu-input::placeholder {
-      color: ${subtextColor};
+      color: var(--lmu-subtext);
       opacity: 0.6;
     }
     .lmu-btn {
@@ -388,7 +502,7 @@
       margin: 20px 0 0 0;
       padding: 0;
       font-size: 13px;
-      color: ${subtextColor};
+      color: var(--lmu-subtext);
     }
     .lmu-switch a {
       color: ${accent};
@@ -398,13 +512,13 @@
     }
     .lmu-switch a:hover { text-decoration: underline; }
     .lmu-error {
-      background: ${isDark ? '#3b1c1c' : '#fef2f2'};
-      color: ${isDark ? '#f87171' : '#dc2626'};
+      background: var(--lmu-error-bg);
+      color: var(--lmu-error-color);
       padding: 11px 14px;
       margin: 0 0 18px 0;
       border-radius: 10px;
       font-size: 13px;
-      border: 1px solid ${isDark ? '#5c2828' : '#fecaca'};
+      border: 1px solid var(--lmu-error-border);
     }
     .lmu-divider {
       display: flex;
@@ -413,14 +527,14 @@
       padding: 0;
       gap: 12px;
       font-size: 12px;
-      color: ${subtextColor};
+      color: var(--lmu-subtext);
     }
     .lmu-divider::before,
     .lmu-divider::after {
       content: '';
       flex: 1;
       height: 1px;
-      background: ${inputBorder};
+      background: var(--lmu-input-border);
     }
     .lmu-oauth-row {
       display: flex;
@@ -440,20 +554,20 @@
       height: 44px;
       padding: 0 16px;
       margin: 0;
-      border: 1.5px solid ${inputBorder};
+      border: 1.5px solid var(--lmu-input-border);
       border-radius: 10px;
       font-size: 14px;
       font-weight: 500;
       font-family: inherit;
       line-height: 44px;
       cursor: pointer;
-      background: ${inputBg};
-      color: ${textColor};
+      background: var(--lmu-input-bg);
+      color: var(--lmu-text);
       transition: border-color 0.2s, background 0.15s;
     }
     .lmu-oauth-btn:hover {
       border-color: ${accent};
-      background: ${isDark ? '#3b3b50' : '#f1f5f9'};
+      background: var(--lmu-hover-bg);
     }
     .lmu-oauth-btn svg {
       width: 18px;
@@ -465,10 +579,14 @@
     }
   `
 
+
   function createModal(initialMode: 'login' | 'register'): void {
     // Remove existing modal if any
     const existing = document.getElementById('lmu-auth-host')
-    if (existing) existing.remove()
+    if (existing) {
+      activeShadowHosts.delete(existing)
+      existing.remove()
+    }
 
     let currentMode = initialMode
     let errorMsg = ''
@@ -480,12 +598,20 @@
     host.style.cssText = 'position:fixed;inset:0;z-index:99999;'
     const shadow = host.attachShadow({ mode: 'closed' })
 
+    // Register this host for dynamic theme updates
+    activeShadowHosts.add(host)
+
+    function removeHost(): void {
+      activeShadowHosts.delete(host)
+      host.remove()
+    }
+
     // Backdrop click — attached ONCE, outside render()
     shadow.addEventListener('click', (e) => {
       const card = shadow.querySelector('.lmu-card')
       // Only close if click target is still in the shadow DOM (not a detached element from re-render)
       if (card && !card.contains(e.target as Node) && shadow.contains(e.target as Node)) {
-        host.remove()
+        removeHost()
       }
     })
 
@@ -529,7 +655,7 @@
               ` : ''}
               ${availableProviders.includes('github') ? `
                 <button class="lmu-oauth-btn" id="lmu-oauth-github">
-                  <svg viewBox="0 0 24 24" fill="${textColor}"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="var(--lmu-text)"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
                   ${t('oauth.github')}
                 </button>
               ` : ''}
@@ -543,13 +669,16 @@
         </div>
       `
 
+      // Apply current theme CSS variables to the host element
+      applyThemeToHost(host)
+
       // Bind events
-      shadow.getElementById('lmu-close-btn')?.addEventListener('click', () => host.remove())
+      shadow.getElementById('lmu-close-btn')?.addEventListener('click', () => removeHost())
 
       shadow.getElementById('lmu-oauth-google')?.addEventListener('click', () => startOAuth('google'))
       shadow.getElementById('lmu-oauth-github')?.addEventListener('click', () => startOAuth('github'))
       shadow.getElementById('lmu-forgot-pw')?.addEventListener('click', () => {
-        host.remove()
+        removeHost()
         window.open(`${baseUrl}/login?app=${appId}&tab=login`, '_blank')
       })
 
@@ -593,7 +722,7 @@
             currentUser = data.user
             scheduleRefresh()
             fireCallbacks()
-            host.remove()
+            removeHost()
           } else {
             const displayName = formData.get('displayName') as string
             const data = (await apiPost('/api/auth/register', {
@@ -607,7 +736,7 @@
             currentUser = data.user
             scheduleRefresh()
             fireCallbacks()
-            host.remove()
+            removeHost()
           }
         } catch (err) {
           errorMsg = err instanceof Error ? err.message : t('error.generic')
@@ -631,16 +760,17 @@
 
   const PROFILE_CARD_STYLES = `
     :host {
+      ${HOST_THEME_VARS}
       display: block;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: 1.5;
     }
     *, *::before, *::after { box-sizing: border-box; }
     .lmu-profile-card {
-      background: ${bg};
-      color: ${textColor};
+      background: var(--lmu-bg);
+      color: var(--lmu-text);
       border-radius: 12px;
-      border: 1px solid ${inputBorder};
+      border: 1px solid var(--lmu-input-border);
       padding: 20px;
       max-width: 320px;
     }
@@ -682,7 +812,7 @@
     }
     .lmu-profile-email {
       font-size: 13px;
-      color: ${subtextColor};
+      color: var(--lmu-subtext);
       margin: 2px 0 0;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -694,8 +824,8 @@
       font-weight: 600;
       padding: 2px 8px;
       border-radius: 9999px;
-      background: ${isDark ? '#313244' : '#f1f5f9'};
-      color: ${subtextColor};
+      background: var(--lmu-role-bg);
+      color: var(--lmu-subtext);
       margin-bottom: 14px;
     }
     .lmu-profile-actions {
@@ -706,9 +836,9 @@
       flex: 1;
       height: 36px;
       border-radius: 8px;
-      border: 1px solid ${inputBorder};
-      background: ${inputBg};
-      color: ${textColor};
+      border: 1px solid var(--lmu-input-border);
+      background: var(--lmu-input-bg);
+      color: var(--lmu-text);
       font-size: 13px;
       font-weight: 500;
       font-family: inherit;
@@ -717,7 +847,7 @@
     }
     .lmu-profile-btn:hover {
       border-color: ${accent};
-      background: ${isDark ? '#3b3b50' : '#f1f5f9'};
+      background: var(--lmu-hover-bg);
     }
     .lmu-profile-btn.primary {
       background: ${accent};
@@ -747,6 +877,9 @@
     host.className = 'lmu-profile-card-host'
     const shadow = host.attachShadow({ mode: 'closed' })
 
+    // Register for dynamic theme updates
+    activeShadowHosts.add(host)
+
     function render() {
       if (!currentUser) {
         shadow.innerHTML = `
@@ -757,6 +890,7 @@
             </div>
           </div>
         `
+        applyThemeToHost(host)
         shadow.getElementById('lmu-pc-login')?.addEventListener('click', () => {
           createModal('login')
         })
@@ -783,11 +917,12 @@
           </div>
         </div>
       `
+      applyThemeToHost(host)
       shadow.getElementById('lmu-pc-logout')?.addEventListener('click', () => {
         letmeuse.logout()
       })
       shadow.getElementById('lmu-pc-edit')?.addEventListener('click', () => {
-        window.open(`${baseUrl}/login?app=${appId}&tab=profile`, '_blank')
+        window.open(`${baseUrl}/account?app=${appId}`, '_blank')
       })
     }
 
@@ -799,6 +934,7 @@
 
     return () => {
       unsub()
+      activeShadowHosts.delete(host)
       host.remove()
     }
   }
@@ -807,6 +943,7 @@
 
   const AVATAR_STYLES = `
     :host {
+      ${HOST_THEME_VARS}
       display: inline-block;
       position: relative;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -817,7 +954,7 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      border: 2px solid ${inputBorder};
+      border: 2px solid var(--lmu-input-border);
       background: ${accent};
       color: #fff;
       font-size: 16px;
@@ -843,9 +980,9 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      border: 2px dashed ${inputBorder};
-      background: ${inputBg};
-      color: ${subtextColor};
+      border: 2px dashed var(--lmu-input-border);
+      background: var(--lmu-input-bg);
+      color: var(--lmu-subtext);
       font-size: 18px;
       cursor: pointer;
       display: flex;
@@ -859,8 +996,8 @@
       position: absolute;
       top: calc(100% + 6px);
       right: 0;
-      background: ${bg};
-      border: 1px solid ${inputBorder};
+      background: var(--lmu-bg);
+      border: 1px solid var(--lmu-input-border);
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.15);
       min-width: 200px;
@@ -869,17 +1006,17 @@
     }
     .lmu-avatar-dropdown-header {
       padding: 12px 14px;
-      border-bottom: 1px solid ${inputBorder};
+      border-bottom: 1px solid var(--lmu-input-border);
     }
     .lmu-avatar-dropdown-name {
       font-size: 14px;
       font-weight: 600;
-      color: ${textColor};
+      color: var(--lmu-text);
       margin: 0;
     }
     .lmu-avatar-dropdown-email {
       font-size: 12px;
-      color: ${subtextColor};
+      color: var(--lmu-subtext);
       margin: 2px 0 0;
     }
     .lmu-avatar-dropdown-item {
@@ -888,7 +1025,7 @@
       padding: 10px 14px;
       border: none;
       background: none;
-      color: ${textColor};
+      color: var(--lmu-text);
       font-size: 13px;
       font-family: inherit;
       cursor: pointer;
@@ -896,7 +1033,7 @@
       transition: background 0.1s;
     }
     .lmu-avatar-dropdown-item:hover {
-      background: ${isDark ? '#313244' : '#f8fafc'};
+      background: var(--lmu-dropdown-item-hover-bg);
     }
     .lmu-avatar-dropdown-item.danger { color: #ef4444; }
   `
@@ -909,6 +1046,9 @@
     host.className = 'lmu-avatar-host'
     const shadow = host.attachShadow({ mode: 'closed' })
 
+    // Register for dynamic theme updates
+    activeShadowHosts.add(host)
+
     let dropdownOpen = false
 
     function render() {
@@ -919,6 +1059,7 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
         `
+        applyThemeToHost(host)
         shadow.getElementById('lmu-av-login')?.addEventListener('click', () => {
           createModal('login')
         })
@@ -943,6 +1084,8 @@
         ` : ''}
       `
 
+      applyThemeToHost(host)
+
       shadow.getElementById('lmu-av-toggle')?.addEventListener('click', () => {
         dropdownOpen = !dropdownOpen
         render()
@@ -950,7 +1093,7 @@
       shadow.getElementById('lmu-av-profile')?.addEventListener('click', () => {
         dropdownOpen = false
         render()
-        window.open(`${baseUrl}/login?app=${appId}&tab=profile`, '_blank')
+        window.open(`${baseUrl}/account?app=${appId}`, '_blank')
       })
       shadow.getElementById('lmu-av-logout')?.addEventListener('click', () => {
         dropdownOpen = false
@@ -977,6 +1120,7 @@
 
     return () => {
       unsub()
+      activeShadowHosts.delete(host)
       document.removeEventListener('click', handleOutsideClick)
       host.remove()
     }
@@ -1042,6 +1186,9 @@
     },
     openAdmin() {
       window.open(`${baseUrl}/admin`, '_blank')
+    },
+    openProfile() {
+      window.open(`${baseUrl}/account?app=${appId}`, '_blank')
     },
     renderProfileCard(target: string | HTMLElement) {
       return renderProfileCard(target)
