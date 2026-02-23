@@ -9,5 +9,16 @@
     ],
     "createdAt": "2026-02-13T18:13:15.085Z",
     "updatedAt": "2026-02-13T18:13:15.085Z"
+  },
+  {
+    "id": "app_3lXIxPKb",
+    "name": "reelscript",
+    "secret": "Rs7kW2mNpQ4xYvB9cD1fH3jL5tA8uE6g",
+    "domains": [
+      "http://localhost:5173",
+      "https://reelscript.isnowfriend.com"
+    ],
+    "createdAt": "2026-02-13T19:00:00.000Z",
+    "updatedAt": "2026-02-13T19:00:00.000Z"
   }
 ]
