@@ -76,19 +76,16 @@ export const AuthUserSchema = z.object({
 
 export type AuthUser = z.infer<typeof AuthUserSchema>
 
-const StrongPasswordSchema = z
+const PasswordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
-  .regex(/[a-z]/, 'Password must contain a lowercase letter')
-  .regex(/[A-Z]/, 'Password must contain an uppercase letter')
-  .regex(/[0-9]/, 'Password must contain a number')
 
 const LocaleSchema = z.enum(['en', 'zh']).optional().default('en')
 
 export const RegisterSchema = z.object({
   appId: z.string().min(1, 'App ID is required'),
   email: z.string().email('Invalid email'),
-  password: StrongPasswordSchema,
+  password: PasswordSchema,
   displayName: z.string().min(1, 'Display name is required'),
   locale: LocaleSchema,
 })
@@ -154,7 +151,7 @@ export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>
 
 export const ResetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
-  password: StrongPasswordSchema,
+  password: PasswordSchema,
 })
 
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>
