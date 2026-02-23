@@ -46,6 +46,11 @@
     'oauth.github': { en: 'GitHub', zh: 'GitHub' },
     'link.forgotPassword': { en: 'Forgot password?', zh: '忘記密碼？' },
     'error.passwordTooShort': { en: 'Password must be at least 8 characters', zh: '密碼至少需要 8 個字元' },
+    'forgot.title': { en: 'Reset Password', zh: '重設密碼' },
+    'forgot.description': { en: 'Enter your email to receive a reset link.', zh: '輸入信箱以收取重設連結。' },
+    'forgot.send': { en: 'Send Reset Link', zh: '發送重設連結' },
+    'forgot.sent': { en: 'Check your email for the reset link!', zh: '重設連結已寄出，請查看信箱！' },
+    'forgot.backToLogin': { en: 'Back to Sign In', zh: '返回登入' },
     'profile.title': { en: 'Account Settings', zh: '帳號設定' },
     'profile.displayName': { en: 'Display Name', zh: '顯示名稱' },
     'profile.email': { en: 'Email', zh: '電子信箱' },
@@ -60,6 +65,13 @@
     'profile.passwordMismatch': { en: 'Passwords do not match', zh: '兩次密碼不一致' },
     'profile.passwordChanged': { en: 'Password changed!', zh: '密碼已變更！' },
     'profile.logout': { en: 'Log Out', zh: '登出' },
+    'profile.avatar': { en: 'Change Avatar', zh: '更換頭像' },
+    'profile.avatarUploading': { en: 'Uploading...', zh: '上傳中...' },
+    'profile.avatarUpdated': { en: 'Avatar updated!', zh: '頭像已更新！' },
+    'profile.emailVerified': { en: 'Verified', zh: '已驗證' },
+    'profile.emailNotVerified': { en: 'Not verified', zh: '未驗證' },
+    'profile.resendVerification': { en: 'Resend', zh: '重寄' },
+    'profile.verificationSent': { en: 'Verification email sent!', zh: '驗證信已寄出！' },
   }
 
   function t(key: string): string {
@@ -162,6 +174,7 @@
     avatar?: string
     role: string
     appId: string
+    emailVerified?: boolean
   }
 
   type AuthCallback = (user: LetMeUseUser | null) => void
@@ -556,6 +569,15 @@
       font-size: 13px;
       border: 1px solid var(--lmu-error-border);
     }
+    .lmu-success {
+      background: #ecfdf5;
+      color: #059669;
+      padding: 11px 14px;
+      margin: 0 0 18px 0;
+      border-radius: 10px;
+      font-size: 13px;
+      border: 1px solid #a7f3d0;
+    }
     .lmu-divider {
       display: flex;
       align-items: center;
@@ -616,7 +638,7 @@
   `
 
 
-  function createModal(initialMode: 'login' | 'register'): void {
+  function createModal(initialMode: 'login' | 'register' | 'forgot'): void {
     // Remove existing modal if any
     const existing = document.getElementById('lmu-auth-host')
     if (existing) {
@@ -626,6 +648,7 @@
 
     let currentMode = initialMode
     let errorMsg = ''
+    let successMsg = ''
     let loading = false
 
     // Create host element + shadow root for style isolation
@@ -653,7 +676,65 @@
 
     function render(): void {
       const isLogin = currentMode === 'login'
+      const isForgot = currentMode === 'forgot'
 
+      // Forgot password view
+      if (isForgot) {
+        shadow.innerHTML = `
+          <style>${MODAL_STYLES}</style>
+          <div class="lmu-card">
+            <button class="lmu-close" id="lmu-close-btn">&times;</button>
+            <div class="lmu-title">${t('forgot.title')}</div>
+            ${successMsg ? `<div class="lmu-success">${successMsg}</div>` : ''}
+            ${errorMsg ? `<div class="lmu-error">${errorMsg}</div>` : ''}
+            ${!successMsg ? `
+              <p style="font-size:14px;color:var(--lmu-subtext);margin:0 0 18px 0;text-align:center;">${t('forgot.description')}</p>
+              <form id="lmu-forgot-form">
+                <div class="lmu-field">
+                  <label class="lmu-label">${t('label.email')}</label>
+                  <input class="lmu-input" type="email" name="email" required />
+                </div>
+                <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
+                  ${loading ? t('msg.loading') : t('forgot.send')}
+                </button>
+              </form>
+            ` : ''}
+            <div class="lmu-switch">
+              <a id="lmu-back-login">${t('forgot.backToLogin')}</a>
+            </div>
+          </div>
+        `
+        applyThemeToHost(host)
+        shadow.getElementById('lmu-close-btn')?.addEventListener('click', () => removeHost())
+        shadow.getElementById('lmu-back-login')?.addEventListener('click', () => {
+          currentMode = 'login'
+          errorMsg = ''
+          successMsg = ''
+          render()
+        })
+        const forgotForm = shadow.getElementById('lmu-forgot-form') as HTMLFormElement | null
+        forgotForm?.addEventListener('submit', async (e) => {
+          e.preventDefault()
+          const fd = new FormData(forgotForm)
+          const email = fd.get('email') as string
+          loading = true
+          errorMsg = ''
+          render()
+          try {
+            await apiPost('/api/auth/forgot-password', { appId, email })
+            loading = false
+            successMsg = t('forgot.sent')
+            render()
+          } catch (err) {
+            errorMsg = err instanceof Error ? err.message : t('error.generic')
+            loading = false
+            render()
+          }
+        })
+        return
+      }
+
+      // Login / Register view
       shadow.innerHTML = `
         <style>${MODAL_STYLES}</style>
         <div class="lmu-card">
@@ -714,8 +795,10 @@
       shadow.getElementById('lmu-oauth-google')?.addEventListener('click', () => startOAuth('google'))
       shadow.getElementById('lmu-oauth-github')?.addEventListener('click', () => startOAuth('github'))
       shadow.getElementById('lmu-forgot-pw')?.addEventListener('click', () => {
-        removeHost()
-        window.open(`${baseUrl}/login?app=${appId}&tab=login`, '_blank')
+        currentMode = 'forgot'
+        errorMsg = ''
+        successMsg = ''
+        render()
       })
 
       shadow.getElementById('lmu-switch-mode')?.addEventListener('click', () => {
@@ -840,8 +923,24 @@
       background: ${accent}; color: #fff; display: flex;
       align-items: center; justify-content: center;
       font-size: 24px; font-weight: 600; flex-shrink: 0; overflow: hidden;
+      cursor: pointer; position: relative; transition: opacity 0.15s;
     }
+    .lmu-avatar-circle:hover { opacity: 0.8; }
     .lmu-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .lmu-avatar-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.15s; border-radius: 50%;
+    }
+    .lmu-avatar-circle:hover .lmu-avatar-overlay { opacity: 1; }
+    .lmu-avatar-overlay svg { width: 20px; height: 20px; }
+    .lmu-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; padding: 2px 8px;
+      border-radius: 9999px;
+    }
+    .lmu-badge-verified { background: #ecfdf5; color: #059669; }
+    .lmu-badge-unverified { background: var(--lmu-error-bg); color: var(--lmu-error-color); }
     .lmu-avatar-info { min-width: 0; flex: 1; }
     .lmu-avatar-name {
       font-size: 18px; font-weight: 600; margin: 0;
@@ -921,8 +1020,9 @@
       existing.remove()
     }
 
-    const token = getStoredAccessToken()
-    if (!token) return
+    const storedToken = getStoredAccessToken()
+    if (!storedToken) return
+    const token: string = storedToken
 
     let editingName = false
     let nameValue = currentUser.displayName
@@ -933,6 +1033,10 @@
     let pwError = ''
     let pwSuccess = ''
     let savingPw = false
+
+    let uploadingAvatar = false
+    let avatarSuccess = ''
+    let verificationSent = false
 
     const host = document.createElement('div')
     host.id = 'lmu-profile-host'
@@ -957,19 +1061,38 @@
       if (!currentUser) return
       const initial = currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?'
 
+      const avatarSrc = currentUser.avatar
+        ? (currentUser.avatar.startsWith('http') ? currentUser.avatar : `${baseUrl}${currentUser.avatar}`)
+        : ''
+      const isVerified = currentUser.emailVerified === true
+
       shadow.innerHTML = `
         <style>${PROFILE_MODAL_STYLES}</style>
         <div class="lmu-card">
           <button class="lmu-close" id="lmu-close">&times;</button>
           <div class="lmu-title">${t('profile.title')}</div>
 
+          ${avatarSuccess ? `<div class="lmu-success" style="margin-bottom:16px;">${avatarSuccess}</div>` : ''}
+
           <div class="lmu-avatar-area">
-            <div class="lmu-avatar-circle">
-              ${currentUser.avatar ? `<img src="${currentUser.avatar}" alt="" />` : initial}
+            <div class="lmu-avatar-circle" id="lmu-avatar-click" title="${t('profile.avatar')}">
+              ${avatarSrc ? `<img src="${avatarSrc}" alt="" />` : initial}
+              <div class="lmu-avatar-overlay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              ${uploadingAvatar ? `<div class="lmu-avatar-overlay" style="opacity:1;"><span style="font-size:11px;color:#fff;">${t('profile.avatarUploading')}</span></div>` : ''}
             </div>
+            <input type="file" id="lmu-avatar-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;" />
             <div class="lmu-avatar-info">
               <p class="lmu-avatar-name">${currentUser.displayName}</p>
-              <p class="lmu-avatar-email">${currentUser.email}</p>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+                <p class="lmu-avatar-email" style="margin:0;">${currentUser.email}</p>
+                ${isVerified
+                  ? `<span class="lmu-badge lmu-badge-verified">${t('profile.emailVerified')}</span>`
+                  : `<span class="lmu-badge lmu-badge-unverified">${t('profile.emailNotVerified')}</span>`}
+              </div>
+              ${!isVerified && !verificationSent ? `<a id="lmu-resend-verify" style="font-size:11px;color:${accent};cursor:pointer;margin-top:4px;display:inline-block;">${t('profile.resendVerification')}</a>` : ''}
+              ${verificationSent ? `<span style="font-size:11px;color:#059669;margin-top:4px;display:inline-block;">${t('profile.verificationSent')}</span>` : ''}
             </div>
           </div>
 
@@ -1041,6 +1164,58 @@
 
       // Bind events
       shadow.getElementById('lmu-close')?.addEventListener('click', () => removeHost())
+
+      // Avatar upload
+      const avatarBtn = shadow.getElementById('lmu-avatar-click')
+      const avatarInput = shadow.getElementById('lmu-avatar-input') as HTMLInputElement | null
+      avatarBtn?.addEventListener('click', () => avatarInput?.click())
+      avatarInput?.addEventListener('change', async () => {
+        const file = avatarInput.files?.[0]
+        if (!file || !token) return
+        if (file.size > 2 * 1024 * 1024) {
+          avatarSuccess = ''
+          render()
+          return
+        }
+        uploadingAvatar = true
+        render()
+        try {
+          const fd = new FormData()
+          fd.append('file', file)
+          const res = await fetch(`${baseUrl}/api/auth/avatar`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          })
+          const json = await res.json()
+          if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
+          const data = (json as { data?: { user?: LetMeUseUser } }).data
+          if (data?.user && currentUser) {
+            currentUser = { ...currentUser, avatar: data.user.avatar }
+            fireCallbacks()
+          }
+          uploadingAvatar = false
+          avatarSuccess = t('profile.avatarUpdated')
+          render()
+          setTimeout(() => { avatarSuccess = ''; render() }, 2000)
+        } catch {
+          uploadingAvatar = false
+          render()
+        }
+      })
+
+      // Resend email verification
+      shadow.getElementById('lmu-resend-verify')?.addEventListener('click', async () => {
+        if (!token) return
+        try {
+          await apiPost('/api/auth/register', { appId, resendVerification: true })
+        } catch {
+          // best effort
+        }
+        verificationSent = true
+        render()
+        setTimeout(() => { verificationSent = false }, 5000)
+      })
 
       // Name editing
       shadow.getElementById('lmu-name-edit')?.addEventListener('click', () => {

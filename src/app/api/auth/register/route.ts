@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         createdAt: now,
       }
       await create<VerificationToken>(VERIFICATION_TOKENS_FILE, vt)
-      await sendVerificationEmail(user.email, vToken, app.name, locale)
+      await sendVerificationEmail(user.email, vToken, app.name, locale, user.displayName)
     }
 
     const accessToken = await signAccessToken(user, app)

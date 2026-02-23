@@ -6,6 +6,9 @@ import { generateUserId, generateRefreshTokenId } from '@/lib/id'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
 import { hashPassword } from '@/lib/auth/password'
 import { exchangeCodeForTokens, fetchOAuthUserInfo, parseOAuthState } from '@/lib/auth/oauth'
+import { dispatchWebhook } from '@/lib/webhook'
+import { writeAuditLog } from '@/lib/audit'
+import { createSession } from '@/lib/session'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
@@ -67,6 +70,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       (u) => u.appId === appId && u.oauthProvider === providerName && u.oauthId === oauthUser.id
     )
 
+    let isNewUser = false
+
     if (!user) {
       // Check for existing user by email (account linking)
       const existingByEmail = users.find(
@@ -78,6 +83,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const updated = await update<AuthUser>(USERS_FILE, existingByEmail.id, {
           oauthProvider: providerName,
           oauthId: oauthUser.id,
+          emailVerified: true,
           avatar: existingByEmail.avatar ?? oauthUser.avatar,
           lastLoginAt: now,
           updatedAt: now,
@@ -85,6 +91,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         user = updated ?? existingByEmail
       } else {
         // Create new user
+        isNewUser = true
         const randomPassword = crypto.randomUUID()
         user = {
           id: generateUserId(),
@@ -95,6 +102,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           avatar: oauthUser.avatar,
           role: 'user',
           disabled: false,
+          emailVerified: true,
           oauthProvider: providerName,
           oauthId: oauthUser.id,
           createdAt: now,
@@ -130,6 +138,47 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     await create<RefreshToken>(REFRESH_TOKENS_FILE, refreshToken)
+
+    // Create session
+    await createSession({
+      userId: user.id,
+      appId: app.id,
+      refreshTokenId: refreshToken.id,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+      userAgent: request.headers.get('user-agent') ?? undefined,
+    })
+
+    // Dispatch webhook and audit log
+    if (isNewUser) {
+      dispatchWebhook(app, 'user.registered', {
+        userId: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        oauthProvider: providerName,
+      })
+      writeAuditLog({
+        action: 'user.register',
+        actorId: user.id,
+        actorEmail: user.email,
+        appId: app.id,
+        details: { oauthProvider: providerName },
+        ip: request.headers.get('x-forwarded-for') ?? undefined,
+      })
+    } else {
+      dispatchWebhook(app, 'user.login', {
+        userId: user.id,
+        email: user.email,
+        oauthProvider: providerName,
+      })
+      writeAuditLog({
+        action: 'user.login',
+        actorId: user.id,
+        actorEmail: user.email,
+        appId: app.id,
+        details: { oauthProvider: providerName },
+        ip: request.headers.get('x-forwarded-for') ?? undefined,
+      })
+    }
 
     // Build redirect URL with tokens in hash fragment
     const targetUrl = redirectUrl ?? `${BASE_URL}/login`

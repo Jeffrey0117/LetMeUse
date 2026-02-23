@@ -40,6 +40,9 @@ yarn-error.log*
 
 # uploads
 /public/uploads/*
+!/public/uploads/avatars/
+/public/uploads/avatars/*
+!/public/uploads/avatars/.gitkeep
 !/public/uploads/.gitkeep
 
 # vercel

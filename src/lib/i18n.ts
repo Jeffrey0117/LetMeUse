@@ -452,6 +452,15 @@ const translations = {
   'module.widgets': { en: 'Widgets', zh: '組件' },
   'module.analytics': { en: 'Analytics', zh: '分析' },
   'module.billing': { en: 'Billing', zh: '金流' },
+
+  // Email verification & password reset
+  'auth.verificationEmailSent': { en: 'Verification email sent. Please check your inbox.', zh: '驗證信已發送，請檢查您的收件匣。' },
+  'auth.emailAlreadyVerified': { en: 'Email is already verified.', zh: '信箱已驗證。' },
+  'auth.verificationTokenExpired': { en: 'Verification token has expired.', zh: '驗證連結已過期。' },
+  'auth.verificationTokenInvalid': { en: 'Invalid or expired verification token.', zh: '無效或已過期的驗證連結。' },
+  'auth.resetTokenExpired': { en: 'Reset token has expired.', zh: '重設連結已過期。' },
+  'auth.resetTokenInvalid': { en: 'Invalid or expired reset token.', zh: '無效或已過期的重設連結。' },
+  'auth.emailVerificationRequired': { en: 'Please verify your email before signing in.', zh: '請先驗證您的信箱再登入。' },
 } as const
 
 export type TranslationKey = keyof typeof translations
