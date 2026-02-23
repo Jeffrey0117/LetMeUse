@@ -533,6 +533,15 @@
     host.style.cssText = 'position:fixed;inset:0;z-index:99999;'
     const shadow = host.attachShadow({ mode: 'closed' })
 
+    // Backdrop click — attached ONCE, outside render()
+    shadow.addEventListener('click', (e) => {
+      const card = shadow.querySelector('.lmu-card')
+      // Only close if click target is still in the shadow DOM (not a detached element from re-render)
+      if (card && !card.contains(e.target as Node) && shadow.contains(e.target as Node)) {
+        host.remove()
+      }
+    })
+
     function render(): void {
       const isLogin = currentMode === 'login'
 
@@ -596,15 +605,6 @@
       // Bind events
       shadow.getElementById('lmu-close-btn')?.addEventListener('click', () => host.remove())
 
-      // Click backdrop to close
-      shadow.addEventListener('click', (e) => {
-        if (e.target === shadow.firstElementChild?.nextElementSibling) return
-        const card = shadow.querySelector('.lmu-card')
-        if (card && !card.contains(e.target as Node)) {
-          host.remove()
-        }
-      })
-
       shadow.getElementById('lmu-oauth-google')?.addEventListener('click', () => startOAuth('google'))
       shadow.getElementById('lmu-oauth-github')?.addEventListener('click', () => startOAuth('github'))
       shadow.getElementById('lmu-forgot-pw')?.addEventListener('click', () => {
@@ -640,13 +640,14 @@
         e.preventDefault()
         if (loading) return
 
-        loading = true
-        errorMsg = ''
-        render()
-
+        // Read form values BEFORE re-render (render replaces DOM)
         const formData = new FormData(form)
         const email = formData.get('email') as string
         const password = formData.get('password') as string
+
+        loading = true
+        errorMsg = ''
+        render()
 
         // Client-side password validation for register (Shadow DOM can't show native tooltips)
         if (!isLogin) {
