@@ -46,6 +46,20 @@
     'oauth.github': { en: 'GitHub', zh: 'GitHub' },
     'link.forgotPassword': { en: 'Forgot password?', zh: '忘記密碼？' },
     'error.passwordTooShort': { en: 'Password must be at least 8 characters', zh: '密碼至少需要 8 個字元' },
+    'profile.title': { en: 'Account Settings', zh: '帳號設定' },
+    'profile.displayName': { en: 'Display Name', zh: '顯示名稱' },
+    'profile.email': { en: 'Email', zh: '電子信箱' },
+    'profile.role': { en: 'Role', zh: '角色' },
+    'profile.save': { en: 'Save', zh: '儲存' },
+    'profile.saving': { en: 'Saving...', zh: '儲存中...' },
+    'profile.saved': { en: 'Saved!', zh: '已儲存！' },
+    'profile.changePassword': { en: 'Change Password', zh: '變更密碼' },
+    'profile.currentPassword': { en: 'Current Password', zh: '目前密碼' },
+    'profile.newPassword': { en: 'New Password', zh: '新密碼' },
+    'profile.confirmPassword': { en: 'Confirm Password', zh: '確認密碼' },
+    'profile.passwordMismatch': { en: 'Passwords do not match', zh: '兩次密碼不一致' },
+    'profile.passwordChanged': { en: 'Password changed!', zh: '密碼已變更！' },
+    'profile.logout': { en: 'Log Out', zh: '登出' },
   }
 
   function t(key: string): string {
@@ -93,6 +107,28 @@
     const headers: Record<string, string> = {}
     if (token) headers['Authorization'] = `Bearer ${token}`
     const res = await fetch(`${baseUrl}${path}`, { headers })
+    const json = await res.json()
+    if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
+    return (json as { data?: unknown }).data ?? json
+  }
+
+  async function apiPutAuth(path: string, body: Record<string, unknown>, token: string): Promise<unknown> {
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
+    return (json as { data?: unknown }).data ?? json
+  }
+
+  async function apiPostAuth(path: string, body: Record<string, unknown>, token: string): Promise<unknown> {
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
     const json = await res.json()
     if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
     return (json as { data?: unknown }).data ?? json
@@ -756,6 +792,352 @@
     }, 50)
   }
 
+  // ── Profile Modal (Account Settings) ─────────────────
+
+  const PROFILE_MODAL_STYLES = `
+    :host {
+      ${HOST_THEME_VARS}
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 99999 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(0,0,0,0.5) !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    .lmu-card {
+      background: var(--lmu-bg);
+      color: var(--lmu-text);
+      border-radius: 16px;
+      padding: 36px;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .lmu-close {
+      position: absolute; top: 14px; right: 14px;
+      background: none; border: none; font-size: 22px; cursor: pointer;
+      color: var(--lmu-subtext); width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; transition: background 0.15s; padding: 0; margin: 0;
+    }
+    .lmu-close:hover { background: var(--lmu-input-bg); }
+    .lmu-title {
+      font-size: 22px; font-weight: 700; margin: 0 0 24px 0;
+      text-align: center; letter-spacing: -0.3px;
+    }
+    .lmu-avatar-area {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+    }
+    .lmu-avatar-circle {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: ${accent}; color: #fff; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 600; flex-shrink: 0; overflow: hidden;
+    }
+    .lmu-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .lmu-avatar-info { min-width: 0; flex: 1; }
+    .lmu-avatar-name {
+      font-size: 18px; font-weight: 600; margin: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .lmu-avatar-email {
+      font-size: 13px; color: var(--lmu-subtext); margin: 2px 0 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .lmu-section {
+      border-top: 1px solid var(--lmu-input-border);
+      padding-top: 20px; margin-top: 20px;
+    }
+    .lmu-section-title {
+      font-size: 14px; font-weight: 600; margin: 0 0 14px 0;
+    }
+    .lmu-field { margin: 0 0 14px 0; }
+    .lmu-label {
+      display: block; font-size: 13px; font-weight: 600;
+      margin: 0 0 6px 0; color: var(--lmu-subtext);
+    }
+    .lmu-input {
+      display: block; width: 100%; height: 42px; padding: 0 12px;
+      border: 1.5px solid var(--lmu-input-border); border-radius: 10px;
+      font-size: 14px; font-family: inherit; background: var(--lmu-input-bg);
+      color: var(--lmu-text); outline: none; transition: border-color 0.2s;
+    }
+    .lmu-input:focus { border-color: ${accent}; box-shadow: 0 0 0 3px ${accent}22; }
+    .lmu-input:disabled { opacity: 0.6; cursor: not-allowed; }
+    .lmu-row { display: flex; gap: 8px; margin-top: 10px; }
+    .lmu-btn-sm {
+      height: 38px; padding: 0 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; border: none; transition: opacity 0.15s;
+    }
+    .lmu-btn-primary {
+      background: ${accent}; color: #fff;
+    }
+    .lmu-btn-primary:hover { opacity: 0.9; }
+    .lmu-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .lmu-btn-secondary {
+      background: var(--lmu-input-bg); color: var(--lmu-text);
+      border: 1px solid var(--lmu-input-border);
+    }
+    .lmu-btn-secondary:hover { background: var(--lmu-hover-bg); }
+    .lmu-btn-danger {
+      width: 100%; height: 42px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; border: 1.5px solid var(--lmu-error-border);
+      background: none; color: var(--lmu-error-color); transition: background 0.15s;
+    }
+    .lmu-btn-danger:hover { background: var(--lmu-error-bg); }
+    .lmu-success {
+      background: #ecfdf5; color: #059669; padding: 8px 12px;
+      border-radius: 8px; font-size: 13px; margin-bottom: 14px;
+      border: 1px solid #a7f3d0;
+    }
+    .lmu-error {
+      background: var(--lmu-error-bg); color: var(--lmu-error-color);
+      padding: 8px 12px; border-radius: 8px; font-size: 13px;
+      margin-bottom: 14px; border: 1px solid var(--lmu-error-border);
+    }
+    @media (max-width: 480px) {
+      .lmu-card { margin: 16px; padding: 28px; }
+    }
+  `
+
+  function createProfileModal(): void {
+    if (!currentUser) {
+      createModal('login')
+      return
+    }
+
+    const existing = document.getElementById('lmu-profile-host')
+    if (existing) {
+      activeShadowHosts.delete(existing)
+      existing.remove()
+    }
+
+    const token = getStoredAccessToken()
+    if (!token) return
+
+    let editingName = false
+    let nameValue = currentUser.displayName
+    let savingName = false
+    let nameSaved = false
+
+    let showPwForm = false
+    let pwError = ''
+    let pwSuccess = ''
+    let savingPw = false
+
+    const host = document.createElement('div')
+    host.id = 'lmu-profile-host'
+    host.style.cssText = 'position:fixed;inset:0;z-index:99999;'
+    const shadow = host.attachShadow({ mode: 'closed' })
+
+    activeShadowHosts.add(host)
+
+    function removeHost(): void {
+      activeShadowHosts.delete(host)
+      host.remove()
+    }
+
+    shadow.addEventListener('click', (e) => {
+      const card = shadow.querySelector('.lmu-card')
+      if (card && !card.contains(e.target as Node) && shadow.contains(e.target as Node)) {
+        removeHost()
+      }
+    })
+
+    function render(): void {
+      if (!currentUser) return
+      const initial = currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?'
+
+      shadow.innerHTML = `
+        <style>${PROFILE_MODAL_STYLES}</style>
+        <div class="lmu-card">
+          <button class="lmu-close" id="lmu-close">&times;</button>
+          <div class="lmu-title">${t('profile.title')}</div>
+
+          <div class="lmu-avatar-area">
+            <div class="lmu-avatar-circle">
+              ${currentUser.avatar ? `<img src="${currentUser.avatar}" alt="" />` : initial}
+            </div>
+            <div class="lmu-avatar-info">
+              <p class="lmu-avatar-name">${currentUser.displayName}</p>
+              <p class="lmu-avatar-email">${currentUser.email}</p>
+            </div>
+          </div>
+
+          <!-- Display Name Section -->
+          <div class="lmu-section">
+            <div class="lmu-section-title">${t('profile.displayName')}</div>
+            ${nameSaved ? `<div class="lmu-success">${t('profile.saved')}</div>` : ''}
+            ${editingName ? `
+              <div class="lmu-field">
+                <input class="lmu-input" type="text" id="lmu-name-input" value="${nameValue.replace(/"/g, '&quot;')}" />
+              </div>
+              <div class="lmu-row">
+                <button class="lmu-btn-sm lmu-btn-primary" id="lmu-name-save" ${savingName ? 'disabled' : ''}>
+                  ${savingName ? t('profile.saving') : t('profile.save')}
+                </button>
+                <button class="lmu-btn-sm lmu-btn-secondary" id="lmu-name-cancel">${locale === 'zh' ? '取消' : 'Cancel'}</button>
+              </div>
+            ` : `
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:15px;">${currentUser.displayName}</span>
+                <button class="lmu-btn-sm lmu-btn-secondary" id="lmu-name-edit" style="padding:0 12px;height:32px;font-size:12px;">
+                  ${locale === 'zh' ? '編輯' : 'Edit'}
+                </button>
+              </div>
+            `}
+          </div>
+
+          <!-- Change Password Section -->
+          <div class="lmu-section">
+            <div class="lmu-section-title">${t('profile.changePassword')}</div>
+            ${pwSuccess ? `<div class="lmu-success">${pwSuccess}</div>` : ''}
+            ${pwError ? `<div class="lmu-error">${pwError}</div>` : ''}
+            ${showPwForm ? `
+              <form id="lmu-pw-form">
+                <div class="lmu-field">
+                  <label class="lmu-label">${t('profile.currentPassword')}</label>
+                  <input class="lmu-input" type="password" name="currentPassword" required />
+                </div>
+                <div class="lmu-field">
+                  <label class="lmu-label">${t('profile.newPassword')}</label>
+                  <input class="lmu-input" type="password" name="newPassword" required minlength="8" />
+                </div>
+                <div class="lmu-field">
+                  <label class="lmu-label">${t('profile.confirmPassword')}</label>
+                  <input class="lmu-input" type="password" name="confirmPassword" required minlength="8" />
+                </div>
+                <div class="lmu-row">
+                  <button type="submit" class="lmu-btn-sm lmu-btn-primary" ${savingPw ? 'disabled' : ''}>
+                    ${savingPw ? t('profile.saving') : t('profile.save')}
+                  </button>
+                  <button type="button" class="lmu-btn-sm lmu-btn-secondary" id="lmu-pw-cancel">${locale === 'zh' ? '取消' : 'Cancel'}</button>
+                </div>
+              </form>
+            ` : `
+              <button class="lmu-btn-sm lmu-btn-secondary" id="lmu-pw-show">
+                ${locale === 'zh' ? '變更密碼' : 'Change'}
+              </button>
+            `}
+          </div>
+
+          <!-- Logout -->
+          <div class="lmu-section">
+            <button class="lmu-btn-danger" id="lmu-logout">${t('profile.logout')}</button>
+          </div>
+        </div>
+      `
+
+      applyThemeToHost(host)
+
+      // Bind events
+      shadow.getElementById('lmu-close')?.addEventListener('click', () => removeHost())
+
+      // Name editing
+      shadow.getElementById('lmu-name-edit')?.addEventListener('click', () => {
+        editingName = true
+        nameValue = currentUser?.displayName ?? ''
+        nameSaved = false
+        render()
+        const inp = shadow.getElementById('lmu-name-input') as HTMLInputElement | null
+        inp?.focus()
+      })
+      shadow.getElementById('lmu-name-cancel')?.addEventListener('click', () => {
+        editingName = false
+        render()
+      })
+      shadow.getElementById('lmu-name-save')?.addEventListener('click', async () => {
+        const inp = shadow.getElementById('lmu-name-input') as HTMLInputElement | null
+        const val = inp?.value?.trim()
+        if (!val || !token) return
+        savingName = true
+        render()
+        try {
+          await apiPutAuth('/api/auth/profile', { displayName: val }, token)
+          if (currentUser) {
+            currentUser = { ...currentUser, displayName: val }
+            fireCallbacks()
+          }
+          editingName = false
+          nameSaved = true
+          savingName = false
+          render()
+          setTimeout(() => { nameSaved = false; render() }, 2000)
+        } catch (err) {
+          savingName = false
+          render()
+        }
+      })
+
+      // Password
+      shadow.getElementById('lmu-pw-show')?.addEventListener('click', () => {
+        showPwForm = true
+        pwError = ''
+        pwSuccess = ''
+        render()
+      })
+      shadow.getElementById('lmu-pw-cancel')?.addEventListener('click', () => {
+        showPwForm = false
+        pwError = ''
+        render()
+      })
+      const pwForm = shadow.getElementById('lmu-pw-form') as HTMLFormElement | null
+      pwForm?.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const fd = new FormData(pwForm)
+        const currentPassword = fd.get('currentPassword') as string
+        const newPassword = fd.get('newPassword') as string
+        const confirmPassword = fd.get('confirmPassword') as string
+
+        if (newPassword !== confirmPassword) {
+          pwError = t('profile.passwordMismatch')
+          render()
+          return
+        }
+        if (newPassword.length < 8) {
+          pwError = t('error.passwordTooShort')
+          render()
+          return
+        }
+
+        savingPw = true
+        pwError = ''
+        render()
+
+        try {
+          await apiPostAuth('/api/auth/change-password', { currentPassword, newPassword }, token)
+          showPwForm = false
+          savingPw = false
+          pwSuccess = t('profile.passwordChanged')
+          render()
+          setTimeout(() => { pwSuccess = ''; render() }, 3000)
+        } catch (err) {
+          pwError = err instanceof Error ? err.message : t('error.generic')
+          savingPw = false
+          render()
+        }
+      })
+
+      // Logout
+      shadow.getElementById('lmu-logout')?.addEventListener('click', () => {
+        removeHost()
+        letmeuse.logout()
+      })
+    }
+
+    render()
+    document.body.appendChild(host)
+  }
+
   // ── Profile Card Component ────────────────────────────
 
   const PROFILE_CARD_STYLES = `
@@ -922,7 +1304,7 @@
         letmeuse.logout()
       })
       shadow.getElementById('lmu-pc-edit')?.addEventListener('click', () => {
-        window.open(`${baseUrl}/account?app=${appId}`, '_blank')
+        createProfileModal()
       })
     }
 
@@ -1093,7 +1475,7 @@
       shadow.getElementById('lmu-av-profile')?.addEventListener('click', () => {
         dropdownOpen = false
         render()
-        window.open(`${baseUrl}/account?app=${appId}`, '_blank')
+        createProfileModal()
       })
       shadow.getElementById('lmu-av-logout')?.addEventListener('click', () => {
         dropdownOpen = false
@@ -1188,7 +1570,7 @@
       window.open(`${baseUrl}/admin`, '_blank')
     },
     openProfile() {
-      window.open(`${baseUrl}/account?app=${appId}`, '_blank')
+      createProfileModal()
     },
     renderProfileCard(target: string | HTMLElement) {
       return renderProfileCard(target)
