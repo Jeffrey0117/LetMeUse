@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       return fail(messages.join(', '), 400, origin)
     }
 
-    const { appId, email, password, displayName } = parsed.data
+    const { appId, email, password, displayName, locale } = parsed.data
 
     const app = await getById<App>(APPS_FILE, appId)
     if (!app) {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         createdAt: now,
       }
       await create<VerificationToken>(VERIFICATION_TOKENS_FILE, vt)
-      await sendVerificationEmail(user.email, vToken, app.name)
+      await sendVerificationEmail(user.email, vToken, app.name, locale)
     }
 
     const accessToken = await signAccessToken(user, app)

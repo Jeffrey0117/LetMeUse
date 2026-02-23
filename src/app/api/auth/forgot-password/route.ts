@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       return fail(messages.join(', '), 400, origin)
     }
 
-    const { appId, email } = parsed.data
+    const { appId, email, locale } = parsed.data
 
     const app = await getById<App>(APPS_FILE, appId)
     if (!app) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     await create<VerificationToken>(VERIFICATION_TOKENS_FILE, verificationToken)
 
     // Send email
-    await sendPasswordResetEmail(user.email, token, app.name)
+    await sendPasswordResetEmail(user.email, token, app.name, locale)
 
     return success({ message: 'If the email exists, a reset link has been sent.' }, 200, origin)
   } catch (error) {

@@ -7,12 +7,14 @@ const SELF_ORIGINS = new Set([
   process.env.NEXT_PUBLIC_BASE_URL ?? '',
 ].filter(Boolean))
 
+// Public API routes that allow any origin (e.g. embed/serve endpoints)
+const PUBLIC_CORS_PATHS = [
+  '/api/serve/',
+]
+
 function isAllowedOrigin(origin: string): boolean {
   if (SELF_ORIGINS.has(origin)) return true
 
-  // Allow origins matching registered app domains.
-  // In edge middleware we can't read the JSON file system,
-  // so we use the LETMEUSE_ALLOWED_ORIGINS env var (comma-separated).
   const extra = process.env.LETMEUSE_ALLOWED_ORIGINS ?? ''
   if (extra) {
     const list = extra.split(',').map(s => s.trim()).filter(Boolean)
@@ -22,19 +24,45 @@ function isAllowedOrigin(origin: string): boolean {
   return false
 }
 
-export function middleware(request: NextRequest) {
-  const origin = request.headers.get('origin')
-  const isApiRoute = request.nextUrl.pathname.startsWith('/api/')
+function isPublicCorsPath(pathname: string): boolean {
+  return PUBLIC_CORS_PATHS.some(p => pathname.startsWith(p))
+}
 
-  if (!isApiRoute) return NextResponse.next()
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const origin = request.headers.get('origin')
+
+  // ── Admin page protection ───────────────────────────────
+  if (pathname.startsWith('/admin')) {
+    const token = request.cookies.get('lmu_admin_token')?.value
+      ?? request.headers.get('x-admin-token')
+
+    // No server-side JWT verification in edge middleware (no file system),
+    // but we can check token presence. API calls will do full JWT verification.
+    if (!token) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    return NextResponse.next()
+  }
+
+  // ── API routes ──────────────────────────────────────────
+  if (!pathname.startsWith('/api/')) return NextResponse.next()
+
+  const isPublic = isPublicCorsPath(pathname)
 
   // Preflight OPTIONS
   if (request.method === 'OPTIONS') {
-    const allowedOrigin = origin && isAllowedOrigin(origin) ? origin : ''
+    const allowOrigin = isPublic
+      ? (origin ?? '*')
+      : (origin && isAllowedOrigin(origin) ? origin : '')
+
     return new NextResponse(null, {
       status: 204,
       headers: {
-        'Access-Control-Allow-Origin': allowedOrigin,
+        'Access-Control-Allow-Origin': allowOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Max-Age': '86400',
@@ -43,21 +71,27 @@ export function middleware(request: NextRequest) {
     })
   }
 
-  // State-changing requests: validate Origin header to prevent CSRF
+  // State-changing requests: validate Origin (skip for public GET-only routes)
   const isStateMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
-  if (isStateMutating && origin && !isAllowedOrigin(origin)) {
+  if (isStateMutating && origin && !isPublic && !isAllowedOrigin(origin)) {
     return NextResponse.json(
       { success: false, error: 'Forbidden origin' },
       { status: 403 }
     )
   }
 
-  // Non-preflight: validate origin and pass it through via header
+  // Set CORS headers on response
   const response = NextResponse.next()
 
-  if (origin) {
+  if (isPublic) {
+    response.headers.set('Access-Control-Allow-Origin', origin ?? '*')
+    response.headers.set('Cache-Control', 'public, max-age=60')
+  } else if (origin) {
     const validOrigin = isAllowedOrigin(origin) ? origin : ''
     response.headers.set('Access-Control-Allow-Origin', validOrigin)
+  }
+
+  if (origin || isPublic) {
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     response.headers.set('Vary', 'Origin')
@@ -67,5 +101,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: ['/api/:path*', '/admin/:path*'],
 }

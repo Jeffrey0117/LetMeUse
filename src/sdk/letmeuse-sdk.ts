@@ -45,6 +45,9 @@
     'oauth.google': { en: 'Google', zh: 'Google' },
     'oauth.github': { en: 'GitHub', zh: 'GitHub' },
     'link.forgotPassword': { en: 'Forgot password?', zh: '忘記密碼？' },
+    'strength.weak': { en: 'Weak', zh: '弱' },
+    'strength.fair': { en: 'Fair', zh: '中等' },
+    'strength.strong': { en: 'Strong', zh: '強' },
   }
 
   function t(key: string): string {
@@ -459,10 +462,60 @@
       height: 18px;
       flex-shrink: 0;
     }
+    .lmu-strength {
+      margin: 8px 0 0 0;
+      padding: 0;
+    }
+    .lmu-strength-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: ${inputBorder};
+      overflow: hidden;
+      margin: 0 0 4px 0;
+    }
+    .lmu-strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.25s ease, background-color 0.25s ease;
+    }
+    .lmu-strength-fill[data-level="weak"] {
+      width: 33%;
+      background-color: #ef4444;
+    }
+    .lmu-strength-fill[data-level="fair"] {
+      width: 66%;
+      background-color: #eab308;
+    }
+    .lmu-strength-fill[data-level="strong"] {
+      width: 100%;
+      background-color: #22c55e;
+    }
+    .lmu-strength-text {
+      font-size: 11px;
+      font-weight: 500;
+      margin: 0;
+      padding: 0;
+    }
+    .lmu-strength-text[data-level="weak"] { color: #ef4444; }
+    .lmu-strength-text[data-level="fair"] { color: #eab308; }
+    .lmu-strength-text[data-level="strong"] { color: #22c55e; }
     @media (max-width: 480px) {
       .lmu-card { margin: 16px; padding: 28px; }
     }
   `
+
+  function calcPasswordStrength(password: string): { level: 'weak' | 'fair' | 'strong'; label: string } {
+    let met = 0
+    if (password.length >= 8) met++
+    if (/[a-z]/.test(password)) met++
+    if (/[A-Z]/.test(password)) met++
+    if (/[0-9]/.test(password)) met++
+
+    if (met >= 4) return { level: 'strong', label: t('strength.strong') }
+    if (met >= 2) return { level: 'fair', label: t('strength.fair') }
+    return { level: 'weak', label: t('strength.weak') }
+  }
 
   function createModal(initialMode: 'login' | 'register'): void {
     // Remove existing modal if any
@@ -501,7 +554,13 @@
             </div>
             <div class="lmu-field">
               <label class="lmu-label">${t('label.password')}</label>
-              <input class="lmu-input" type="password" name="password" required minlength="${isLogin ? 1 : 8}" pattern="${isLogin ? '.*' : '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}'}" title="${isLogin ? '' : 'Min 8 chars, 1 uppercase, 1 lowercase, 1 number'}" />
+              <input class="lmu-input" type="password" name="password" id="lmu-password-input" required minlength="${isLogin ? 1 : 8}" pattern="${isLogin ? '.*' : '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}'}" title="${isLogin ? '' : 'Min 8 chars, 1 uppercase, 1 lowercase, 1 number'}" />
+              ${!isLogin ? `
+              <div class="lmu-strength" id="lmu-strength">
+                <div class="lmu-strength-bar"><div class="lmu-strength-fill" id="lmu-strength-fill"></div></div>
+                <div class="lmu-strength-text" id="lmu-strength-text"></div>
+              </div>
+              ` : ''}
             </div>
             ${isLogin ? `<div style="text-align:right;margin:-10px 0 8px 0;"><a id="lmu-forgot-pw" style="font-size:12px;color:${accent};cursor:pointer;text-decoration:none;">${t('link.forgotPassword')}</a></div>` : ''}
             <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
@@ -557,6 +616,23 @@
         errorMsg = ''
         render()
       })
+
+      // Password strength indicator (register mode only)
+      if (!isLogin) {
+        const pwInput = shadow.getElementById('lmu-password-input') as HTMLInputElement | null
+        const strengthFill = shadow.getElementById('lmu-strength-fill')
+        const strengthText = shadow.getElementById('lmu-strength-text')
+        if (pwInput && strengthFill && strengthText) {
+          const updateStrength = () => {
+            const { level, label } = calcPasswordStrength(pwInput.value)
+            strengthFill.setAttribute('data-level', pwInput.value ? level : '')
+            strengthText.setAttribute('data-level', pwInput.value ? level : '')
+            strengthText.textContent = pwInput.value ? label : ''
+          }
+          pwInput.addEventListener('input', updateStrength)
+          updateStrength()
+        }
+      }
 
       const form = shadow.getElementById('lmu-auth-form') as HTMLFormElement | null
       form?.addEventListener('submit', async (e) => {
