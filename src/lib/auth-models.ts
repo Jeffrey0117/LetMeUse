@@ -83,11 +83,14 @@ const StrongPasswordSchema = z
   .regex(/[A-Z]/, 'Password must contain an uppercase letter')
   .regex(/[0-9]/, 'Password must contain a number')
 
+const LocaleSchema = z.enum(['en', 'zh']).optional().default('en')
+
 export const RegisterSchema = z.object({
   appId: z.string().min(1, 'App ID is required'),
   email: z.string().email('Invalid email'),
   password: StrongPasswordSchema,
   displayName: z.string().min(1, 'Display name is required'),
+  locale: LocaleSchema,
 })
 
 export type RegisterInput = z.infer<typeof RegisterSchema>
@@ -144,6 +147,7 @@ export type VerificationToken = z.infer<typeof VerificationTokenSchema>
 export const ForgotPasswordSchema = z.object({
   appId: z.string().min(1, 'App ID is required'),
   email: z.string().email('Invalid email'),
+  locale: LocaleSchema,
 })
 
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>

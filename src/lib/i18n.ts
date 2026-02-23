@@ -370,6 +370,62 @@ const translations = {
   'admin.webhooks.statusFailed': { en: 'Failed', zh: '失敗' },
   'admin.webhooks.retry': { en: 'Retry', zh: '重試' },
   'admin.webhooks.retrying': { en: 'Retrying...', zh: '重試中...' },
+// Admin Dashboard – stat cards & sections (hardcoded strings)
+  'admin.stats.apps': { en: 'Apps', zh: '應用程式' },
+  'admin.stats.verified': { en: 'Verified', zh: '已驗證' },
+  'admin.stats.oauth': { en: 'OAuth', zh: 'OAuth' },
+  'admin.stats.disabled': { en: 'Disabled', zh: '已停用' },
+  'admin.stats.webhooksOk': { en: 'Webhooks OK', zh: 'Webhooks 成功' },
+  'admin.dashboard.registrationTrend': { en: 'Registration Trend (7 days)', zh: '註冊趨勢（7 天）' },
+  'admin.dashboard.roleDistribution': { en: 'Role Distribution', zh: '角色分佈' },
+  'admin.dashboard.noUsersYet': { en: 'No users yet.', zh: '尚無使用者。' },
+  'admin.dashboard.manageUsers': { en: 'Manage Users', zh: '管理使用者' },
+  'admin.dashboard.manageApps': { en: 'Manage Apps', zh: '管理應用程式' },
+  'admin.dashboard.manageRoles': { en: 'Manage Roles', zh: '管理角色' },
+  'admin.dashboard.viewAll': { en: 'View all', zh: '查看全部' },
+
+  // Admin Audit – filter options (hardcoded strings)
+  'admin.audit.allActions': { en: 'All Actions', zh: '全部操作' },
+  'admin.audit.actionLogin': { en: 'Login', zh: '登入' },
+  'admin.audit.actionLoginFailed': { en: 'Login Failed', zh: '登入失敗' },
+  'admin.audit.actionRegister': { en: 'Register', zh: '註冊' },
+  'admin.audit.actionUserUpdated': { en: 'Admin: User Updated', zh: '管理員：使用者已更新' },
+  'admin.audit.actionUserDisabled': { en: 'Admin: User Disabled', zh: '管理員：使用者已停用' },
+  'admin.audit.actionUserDeleted': { en: 'Admin: User Deleted', zh: '管理員：使用者已刪除' },
+  'admin.audit.entry': { en: 'entry', zh: '筆紀錄' },
+  'admin.audit.entries': { en: 'entries', zh: '筆紀錄' },
+
+  // Admin Apps – OAuth section (hardcoded strings)
+  'admin.apps.oauthProviders': { en: 'OAuth Providers', zh: 'OAuth 供應商' },
+  'admin.apps.googleOAuth': { en: 'Google OAuth', zh: 'Google OAuth' },
+  'admin.apps.githubOAuth': { en: 'GitHub OAuth', zh: 'GitHub OAuth' },
+  'admin.apps.enabled': { en: 'Enabled', zh: '啟用' },
+  'admin.apps.clientId': { en: 'Client ID', zh: 'Client ID' },
+  'admin.apps.clientSecret': { en: 'Client Secret', zh: 'Client Secret' },
+  'admin.apps.saving': { en: 'Saving...', zh: '儲存中...' },
+  'admin.apps.saveOAuth': { en: 'Save OAuth Settings', zh: '儲存 OAuth 設定' },
+  'admin.apps.cancel': { en: 'Cancel', zh: '取消' },
+
+  // Admin User Detail (hardcoded strings)
+  'admin.users.appId': { en: 'App ID', zh: '應用程式 ID' },
+
+  // Common error / fallback messages (hardcoded strings)
+  'common.error.somethingWentWrong': { en: 'Something went wrong', zh: '發生錯誤' },
+  'common.error.networkError': { en: 'Network error', zh: '網路錯誤' },
+  'common.error.uploadFailed': { en: 'Upload failed', zh: '上傳失敗' },
+  'common.error.failedToLoad': { en: 'Failed to load data', zh: '載入資料失敗' },
+  'common.error.failedToSave': { en: 'Failed to save', zh: '儲存失敗' },
+
+  // Ad Form – extra placeholders (hardcoded strings)
+  'adForm.ctaPlaceholder': { en: 'Click Here', zh: '點擊這裡' },
+
+  // Login Form – extra placeholders (hardcoded strings)
+  'loginForm.submitPlaceholder': { en: 'Sign In', zh: '登入' },
+
+  // Feedback Form – extra placeholders (hardcoded strings)
+  'feedbackForm.submitPlaceholder': { en: 'Send Feedback', zh: '送出回饋' },
+  'feedbackForm.successPlaceholder': { en: 'Thank you for your feedback!', zh: '感謝您的回饋！' },
+
   // Module labels
   'module.ads': { en: 'Ads', zh: '廣告' },
   'module.auth': { en: 'Auth', zh: '認證' },
