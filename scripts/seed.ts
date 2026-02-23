@@ -1,7 +1,27 @@
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, access } from 'fs/promises'
 import path from 'path'
 import bcrypt from 'bcryptjs'
 import { nanoid } from 'nanoid'
+
+const forceFlag = process.argv.includes('--force')
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function writeIfNotExists(filePath: string, data: string): Promise<boolean> {
+  if (!forceFlag && await fileExists(filePath)) {
+    console.log(`  SKIP: ${path.basename(filePath)} already exists (use --force to overwrite)`)
+    return false
+  }
+  await writeFile(filePath, data)
+  return true
+}
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 
@@ -127,20 +147,22 @@ const defaultApp = {
 async function seed() {
   await mkdir(DATA_DIR, { recursive: true })
 
+  console.log(`Seeding data${forceFlag ? ' (--force)' : ''}...\n`)
+
   // Seed projects
-  await writeFile(
+  await writeIfNotExists(
     path.join(DATA_DIR, 'projects.json'),
     JSON.stringify(projects, null, 2)
   )
 
   // Seed ads
-  await writeFile(
+  await writeIfNotExists(
     path.join(DATA_DIR, 'ads.json'),
     JSON.stringify(ads, null, 2)
   )
 
   // Seed default app
-  await writeFile(
+  const wroteApp = await writeIfNotExists(
     path.join(DATA_DIR, 'apps.json'),
     JSON.stringify([defaultApp], null, 2)
   )
@@ -159,28 +181,26 @@ async function seed() {
     updatedAt: now,
   }
 
-  await writeFile(
+  await writeIfNotExists(
     path.join(DATA_DIR, 'users.json'),
     JSON.stringify([adminUser], null, 2)
   )
 
   // Seed empty refresh tokens
-  await writeFile(
+  await writeIfNotExists(
     path.join(DATA_DIR, 'refresh_tokens.json'),
     JSON.stringify([], null, 2)
   )
 
-  console.log('Seeded data:')
-  console.log(`  - ${projects.length} projects`)
-  console.log(`  - ${ads.length} ads`)
-  console.log(`  - 1 app (${defaultApp.name}), ID: ${defaultApp.id}`)
-  console.log(`  - 1 admin user (${adminEmail})`)
-  console.log(`\nDefault app credentials:`)
-  console.log(`  APP_ID:     ${defaultApp.id}`)
-  console.log(`  APP_SECRET: ${defaultApp.secret}`)
-  console.log(`\nAdmin login:`)
-  console.log(`  Email:    ${adminEmail}`)
-  console.log(`  Password: ${adminPassword}`)
+  console.log('\nSeed complete.')
+  if (wroteApp) {
+    console.log(`\nDefault app credentials:`)
+    console.log(`  APP_ID:     ${defaultApp.id}`)
+    console.log(`  APP_SECRET: ${defaultApp.secret}`)
+    console.log(`\nAdmin login:`)
+    console.log(`  Email:    ${adminEmail}`)
+    console.log(`  Password: ${adminPassword}`)
+  }
 }
 
 seed().catch(console.error)
