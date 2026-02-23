@@ -45,6 +45,7 @@
     'oauth.google': { en: 'Google', zh: 'Google' },
     'oauth.github': { en: 'GitHub', zh: 'GitHub' },
     'link.forgotPassword': { en: 'Forgot password?', zh: '忘記密碼？' },
+    'error.passwordRequires': { en: 'Password requires', zh: '密碼需要' },
     'strength.weak': { en: 'Weak', zh: '弱' },
     'strength.fair': { en: 'Fair', zh: '中等' },
     'strength.strong': { en: 'Strong', zh: '強' },
@@ -554,7 +555,7 @@
             </div>
             <div class="lmu-field">
               <label class="lmu-label">${t('label.password')}</label>
-              <input class="lmu-input" type="password" name="password" id="lmu-password-input" required minlength="${isLogin ? 1 : 8}" pattern="${isLogin ? '.*' : '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}'}" title="${isLogin ? '' : 'Min 8 chars, 1 uppercase, 1 lowercase, 1 number'}" />
+              <input class="lmu-input" type="password" name="password" id="lmu-password-input" required minlength="${isLogin ? 1 : 8}" />
               ${!isLogin ? `
               <div class="lmu-strength" id="lmu-strength">
                 <div class="lmu-strength-bar"><div class="lmu-strength-fill" id="lmu-strength-fill"></div></div>
@@ -646,6 +647,21 @@
         const formData = new FormData(form)
         const email = formData.get('email') as string
         const password = formData.get('password') as string
+
+        // Client-side password validation for register (Shadow DOM can't show native tooltips)
+        if (!isLogin) {
+          const pwErrors: string[] = []
+          if (password.length < 8) pwErrors.push('8+ chars')
+          if (!/[a-z]/.test(password)) pwErrors.push('lowercase')
+          if (!/[A-Z]/.test(password)) pwErrors.push('uppercase')
+          if (!/[0-9]/.test(password)) pwErrors.push('number')
+          if (pwErrors.length > 0) {
+            errorMsg = `${t('error.passwordRequires')}: ${pwErrors.join(', ')}`
+            loading = false
+            render()
+            return
+          }
+        }
 
         try {
           if (isLogin) {
