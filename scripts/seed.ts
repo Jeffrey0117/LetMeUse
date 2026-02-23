@@ -110,11 +110,16 @@ const ads = [
 const adminEmail = process.env.LETMEUSE_DEFAULT_ADMIN_EMAIL ?? 'admin@example.com'
 const adminPassword = process.env.LETMEUSE_DEFAULT_ADMIN_PASSWORD ?? 'changeme'
 
+const defaultAppId = process.env.LETMEUSE_DEFAULT_APP_ID ?? `app_${nanoid(8)}`
+const defaultAppDomains = process.env.LETMEUSE_DEFAULT_APP_DOMAINS
+  ? process.env.LETMEUSE_DEFAULT_APP_DOMAINS.split(',').map(s => s.trim()).filter(Boolean)
+  : ['http://localhost:3000', 'http://localhost:5173']
+
 const defaultApp = {
-  id: `app_${nanoid(8)}`,
+  id: defaultAppId,
   name: 'letmeuse-demo',
   secret: nanoid(32),
-  domains: ['http://localhost:3000', 'http://localhost:5173'],
+  domains: defaultAppDomains,
   createdAt: now,
   updatedAt: now,
 }
