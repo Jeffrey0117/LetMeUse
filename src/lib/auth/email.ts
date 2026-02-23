@@ -1,39 +1,52 @@
+import nodemailer from 'nodemailer'
 import type { Locale } from '@/lib/i18n'
 import { verificationEmailTemplate, passwordResetEmailTemplate } from '@/lib/auth/email-templates'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
-const RESEND_API_KEY = process.env.RESEND_API_KEY ?? ''
-const EMAIL_FROM = process.env.EMAIL_FROM ?? 'LetMeUse <noreply@letmeuse.dev>'
+
+const SMTP_HOST = process.env.SMTP_HOST ?? ''
+const SMTP_PORT = Number(process.env.SMTP_PORT ?? '587')
+const SMTP_USER = process.env.SMTP_USER ?? ''
+const SMTP_PASS = process.env.SMTP_PASS ?? ''
+const SMTP_FROM = process.env.SMTP_FROM ?? 'LetMeUse <noreply@letmeuse.dev>'
 
 interface EmailOptions {
-  to: string
-  subject: string
-  html: string
+  readonly to: string
+  readonly subject: string
+  readonly html: string
 }
 
-async function sendEmail(options: EmailOptions): Promise<void> {
-  if (RESEND_API_KEY) {
-    // Production: use Resend API
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: EMAIL_FROM,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-      }),
-    })
+function isSmtpConfigured(): boolean {
+  return Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS)
+}
 
-    if (!res.ok) {
-      const data = await res.json()
-      throw new Error(`Email send failed: ${JSON.stringify(data)}`)
-    }
+function createTransport(): nodemailer.Transporter {
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  })
+}
+
+export async function sendEmail(options: EmailOptions): Promise<void> {
+  if (isSmtpConfigured()) {
+    const transporter = createTransport()
+    await transporter.sendMail({
+      from: SMTP_FROM,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+    })
   } else {
-    // Development: no-op (set RESEND_API_KEY to send real emails)
+    // Dev mode fallback: log email to console
+    console.info('[email] SMTP not configured — logging email to console')
+    console.info(`  To:      ${options.to}`)
+    console.info(`  Subject: ${options.subject}`)
+    console.info(`  HTML:\n${options.html}`)
   }
 }
 
@@ -41,13 +54,15 @@ export async function sendVerificationEmail(
   email: string,
   token: string,
   appName: string,
-  locale: Locale = 'en'
+  locale: Locale = 'en',
+  displayName?: string
 ): Promise<void> {
   const verifyUrl = `${BASE_URL}/api/auth/verify-email?token=${token}`
 
   const { subject, html } = verificationEmailTemplate({
     verifyUrl,
     appName,
+    displayName,
     locale,
   })
 
@@ -58,13 +73,15 @@ export async function sendPasswordResetEmail(
   email: string,
   token: string,
   appName: string,
-  locale: Locale = 'en'
+  locale: Locale = 'en',
+  displayName?: string
 ): Promise<void> {
   const resetUrl = `${BASE_URL}/reset-password?token=${token}`
 
   const { subject, html } = passwordResetEmailTemplate({
     resetUrl,
     appName,
+    displayName,
     locale,
   })
 

@@ -3,12 +3,14 @@ import type { Locale } from '@/lib/i18n'
 interface VerificationEmailParams {
   readonly verifyUrl: string
   readonly appName: string
+  readonly displayName?: string
   readonly locale: Locale
 }
 
 interface PasswordResetEmailParams {
   readonly resetUrl: string
   readonly appName: string
+  readonly displayName?: string
   readonly locale: Locale
 }
 
@@ -31,9 +33,12 @@ const MUTED_STYLE = 'color: #a1a1aa; font-size: 13px; margin: 24px 0 0 0;'
 
 const LINK_STYLE = 'color: #d4d4d8; font-size: 12px; margin: 16px 0 0 0; word-break: break-all;'
 
+const GREETING_STYLE = 'color: #3f3f46; font-size: 15px; margin: 0 0 8px 0;'
+
 const verificationCopy = {
   en: {
     subject: (appName: string) => `Verify your email - ${appName}`,
+    greeting: (name?: string) => name ? `Hi ${name},` : 'Hi,',
     heading: 'Verify your email',
     body: (appName: string) =>
       `Click the button below to verify your email address for <strong>${appName}</strong>.`,
@@ -43,6 +48,7 @@ const verificationCopy = {
   },
   zh: {
     subject: (appName: string) => `驗證您的信箱 - ${appName}`,
+    greeting: (name?: string) => name ? `${name}，您好：` : '您好：',
     heading: '驗證您的信箱',
     body: (appName: string) =>
       `請點擊下方按鈕驗證您在 <strong>${appName}</strong> 的電子信箱。`,
@@ -55,6 +61,7 @@ const verificationCopy = {
 const passwordResetCopy = {
   en: {
     subject: (appName: string) => `Reset your password - ${appName}`,
+    greeting: (name?: string) => name ? `Hi ${name},` : 'Hi,',
     heading: 'Reset your password',
     body: (appName: string) =>
       `You requested a password reset for your <strong>${appName}</strong> account. Click the button below to set a new password.`,
@@ -65,6 +72,7 @@ const passwordResetCopy = {
   },
   zh: {
     subject: (appName: string) => `重設您的密碼 - ${appName}`,
+    greeting: (name?: string) => name ? `${name}，您好：` : '您好：',
     heading: '重設您的密碼',
     body: (appName: string) =>
       `您已請求重設 <strong>${appName}</strong> 帳號的密碼。請點擊下方按鈕設定新密碼。`,
@@ -75,6 +83,7 @@ const passwordResetCopy = {
 } as const
 
 function buildEmailHtml(params: {
+  readonly greeting: string
   readonly heading: string
   readonly body: string
   readonly buttonText: string
@@ -84,6 +93,7 @@ function buildEmailHtml(params: {
 }): string {
   return `<div style="${WRAPPER_STYLE}">
   <h2 style="${HEADING_STYLE}">${params.heading}</h2>
+  <p style="${GREETING_STYLE}">${params.greeting}</p>
   <p style="${BODY_STYLE}">${params.body}</p>
   <a href="${params.buttonUrl}" style="${BUTTON_STYLE}">${params.buttonText}</a>
   <p style="${MUTED_STYLE}">${params.footer}</p>
@@ -99,6 +109,7 @@ export function verificationEmailTemplate(
   return {
     subject: copy.subject(params.appName),
     html: buildEmailHtml({
+      greeting: copy.greeting(params.displayName),
       heading: copy.heading,
       body: copy.body(params.appName),
       buttonText: copy.button,
@@ -117,6 +128,7 @@ export function passwordResetEmailTemplate(
   return {
     subject: copy.subject(params.appName),
     html: buildEmailHtml({
+      greeting: copy.greeting(params.displayName),
       heading: copy.heading,
       body: copy.body(params.appName),
       buttonText: copy.button,

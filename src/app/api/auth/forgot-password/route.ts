@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
 
     await create<VerificationToken>(VERIFICATION_TOKENS_FILE, verificationToken)
 
-    // Send email
-    await sendPasswordResetEmail(user.email, token, app.name, locale)
+    // Send email with displayName for personalization
+    await sendPasswordResetEmail(user.email, token, app.name, locale, user.displayName)
 
     return success({ message: 'If the email exists, a reset link has been sent.' }, 200, origin)
   } catch (error) {

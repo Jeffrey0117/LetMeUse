@@ -5,6 +5,7 @@ import { hashPassword } from '@/lib/auth/password'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
+import { writeAuditLog } from '@/lib/audit'
 import { revokeAllUserSessions, revokeAllUserRefreshTokens } from '@/lib/session'
 
 export async function OPTIONS(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString()
     const passwordHash = await hashPassword(password)
 
-    await update<AuthUser>(USERS_FILE, resetToken.userId, {
+    const updatedUser = await update<AuthUser>(USERS_FILE, resetToken.userId, {
       passwordHash,
       updatedAt: now,
     } as Partial<AuthUser>)
@@ -67,6 +68,15 @@ export async function POST(request: NextRequest) {
         userId: resetToken.userId,
       })
     }
+
+    // Write audit log
+    writeAuditLog({
+      action: 'user.password_reset',
+      actorId: resetToken.userId,
+      actorEmail: updatedUser?.email,
+      appId: resetToken.appId,
+      ip: request.headers.get('x-forwarded-for') ?? undefined,
+    })
 
     return success({ message: 'Password has been reset successfully.' }, 200, origin)
   } catch (error) {
