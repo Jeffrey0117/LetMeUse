@@ -7,9 +7,10 @@ const SELF_ORIGINS = new Set([
   process.env.NEXT_PUBLIC_BASE_URL ?? '',
 ].filter(Boolean))
 
-// Public API routes that allow any origin (e.g. embed/serve endpoints)
+// Public API routes that allow any origin (SDK-facing endpoints)
 const PUBLIC_CORS_PATHS = [
   '/api/serve/',
+  '/api/auth/',
 ]
 
 function isAllowedOrigin(origin: string): boolean {
@@ -85,7 +86,9 @@ export function middleware(request: NextRequest) {
 
   if (isPublic) {
     response.headers.set('Access-Control-Allow-Origin', origin ?? '*')
-    response.headers.set('Cache-Control', 'public, max-age=60')
+    if (pathname.startsWith('/api/serve/')) {
+      response.headers.set('Cache-Control', 'public, max-age=60')
+    }
   } else if (origin) {
     const validOrigin = isAllowedOrigin(origin) ? origin : ''
     response.headers.set('Access-Control-Allow-Origin', validOrigin)
