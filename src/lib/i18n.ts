@@ -426,6 +426,26 @@ const translations = {
   'feedbackForm.submitPlaceholder': { en: 'Send Feedback', zh: '送出回饋' },
   'feedbackForm.successPlaceholder': { en: 'Thank you for your feedback!', zh: '感謝您的回饋！' },
 
+
+  // Account / Profile
+  'account.title': { en: 'My Account', zh: '我的帳號' },
+  'account.displayName': { en: 'Display Name', zh: '顯示名稱' },
+  'account.email': { en: 'Email', zh: '電子信箱' },
+  'account.role': { en: 'Role', zh: '角色' },
+  'account.memberSince': { en: 'Member Since', zh: '註冊日期' },
+  'account.changePassword': { en: 'Change Password', zh: '變更密碼' },
+  'account.currentPassword': { en: 'Current Password', zh: '目前密碼' },
+  'account.newPassword': { en: 'New Password', zh: '新密碼' },
+  'account.confirmPassword': { en: 'Confirm Password', zh: '確認密碼' },
+  'account.save': { en: 'Save', zh: '儲存' },
+  'account.saving': { en: 'Saving...', zh: '儲存中...' },
+  'account.passwordChanged': { en: 'Password changed successfully', zh: '密碼已成功變更' },
+  'account.passwordMismatch': { en: 'Passwords do not match', zh: '兩次密碼不一致' },
+  'account.logout': { en: 'Log Out', zh: '登出' },
+  'account.loggingOut': { en: 'Logging out...', zh: '登出中...' },
+  'account.notAuthenticated': { en: 'Not authenticated. Please log in.', zh: '尚未登入，請先登入。' },
+  'account.avatar': { en: 'Avatar', zh: '頭像' },
+
   // Module labels
   'module.ads': { en: 'Ads', zh: '廣告' },
   'module.auth': { en: 'Auth', zh: '認證' },
