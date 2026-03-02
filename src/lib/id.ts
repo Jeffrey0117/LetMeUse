@@ -63,3 +63,7 @@ export function generateInvoiceId(): string {
 export function generateCheckoutSessionId(): string {
   return `cs_${nanoid(16)}`
 }
+
+export function generateEmailLeadId(): string {
+  return `lead_${nanoid(12)}`
+}
