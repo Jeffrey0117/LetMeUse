@@ -1,6 +1,6 @@
-import { getAll, getById, create, update, PLANS_FILE, SUBSCRIPTIONS_FILE, INVOICES_FILE } from '../storage'
-import { generatePlanId, generateSubscriptionId, generateInvoiceId } from '../id'
-import type { Plan, Subscription, Invoice, BillingInterval } from './models'
+import { getAll, getById, create, update, PLANS_FILE, SUBSCRIPTIONS_FILE, INVOICES_FILE, CHECKOUT_SESSIONS_FILE } from '../storage'
+import { generatePlanId, generateSubscriptionId, generateInvoiceId, generateCheckoutSessionId } from '../id'
+import type { Plan, Subscription, Invoice, BillingInterval, CheckoutSession, CheckoutMode } from './models'
 import { CreatePlanSchema } from './models'
 import { getPaymentProvider } from './provider'
 
@@ -138,4 +138,65 @@ export async function createInvoice(params: {
 
   await create<Invoice>(INVOICES_FILE, invoice)
   return invoice
+}
+
+// ── Checkout Sessions ──────────────────────────────────
+
+export async function createCheckoutSession(params: {
+  appId: string
+  mode: CheckoutMode
+  productId: string
+  productName: string
+  amount: number
+  currency: string
+  customerEmail?: string
+  metadata?: Record<string, string>
+  successUrl: string
+  cancelUrl?: string
+}): Promise<CheckoutSession> {
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + 30 * 60 * 1000) // 30 min
+
+  const session: CheckoutSession = {
+    id: generateCheckoutSessionId(),
+    appId: params.appId,
+    mode: params.mode,
+    status: 'pending',
+    productId: params.productId,
+    productName: params.productName,
+    amount: params.amount,
+    currency: params.currency,
+    customerEmail: params.customerEmail,
+    metadata: params.metadata,
+    successUrl: params.successUrl,
+    cancelUrl: params.cancelUrl,
+    expiresAt: expiresAt.toISOString(),
+    createdAt: now.toISOString(),
+  }
+
+  await create<CheckoutSession>(CHECKOUT_SESSIONS_FILE, session)
+  return session
+}
+
+export async function getCheckoutSession(sessionId: string): Promise<CheckoutSession | null> {
+  return getById<CheckoutSession>(CHECKOUT_SESSIONS_FILE, sessionId)
+}
+
+export async function completeCheckoutSession(sessionId: string): Promise<CheckoutSession | null> {
+  const session = await getById<CheckoutSession>(CHECKOUT_SESSIONS_FILE, sessionId)
+  if (!session) return null
+  if (session.status !== 'pending') return null
+
+  // Check expiry
+  if (new Date(session.expiresAt) < new Date()) {
+    await update<CheckoutSession>(CHECKOUT_SESSIONS_FILE, sessionId, {
+      status: 'expired',
+    } as Partial<CheckoutSession>)
+    return null
+  }
+
+  return update<CheckoutSession>(CHECKOUT_SESSIONS_FILE, sessionId, {
+    status: 'completed',
+    completedAt: new Date().toISOString(),
+  } as Partial<CheckoutSession>)
 }
