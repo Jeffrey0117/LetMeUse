@@ -90,3 +90,52 @@ export const InvoiceSchema = z.object({
 })
 
 export type Invoice = z.infer<typeof InvoiceSchema>
+
+// ── Checkout Session (one-time or subscription) ────────
+
+export const CHECKOUT_STATUSES = ['pending', 'completed', 'expired', 'cancelled'] as const
+export type CheckoutStatus = (typeof CHECKOUT_STATUSES)[number]
+
+export const CHECKOUT_MODES = ['one_time', 'subscription'] as const
+export type CheckoutMode = (typeof CHECKOUT_MODES)[number]
+
+export const CheckoutSessionSchema = z.object({
+  id: z.string(),
+  appId: z.string(),
+  mode: z.enum(CHECKOUT_MODES),
+  status: z.enum(CHECKOUT_STATUSES),
+  // Product info
+  productId: z.string(),            // plan ID or custom product identifier
+  productName: z.string(),
+  amount: z.number().min(0),
+  currency: z.string().default('TWD'),
+  // Optional: link to LetMeUse user (if authenticated)
+  userId: z.string().optional(),
+  customerEmail: z.string().optional(),
+  // Client-provided metadata (order IDs, etc.)
+  metadata: z.record(z.string(), z.string()).optional(),
+  // Redirect URLs after checkout
+  successUrl: z.string(),
+  cancelUrl: z.string().optional(),
+  // Completion
+  completedAt: z.string().optional(),
+  // Expiry (default 30 min)
+  expiresAt: z.string(),
+  createdAt: z.string(),
+})
+
+export type CheckoutSession = z.infer<typeof CheckoutSessionSchema>
+
+export const CreateCheckoutSchema = z.object({
+  appId: z.string().min(1),
+  appSecret: z.string().min(1),
+  mode: z.enum(CHECKOUT_MODES).default('one_time'),
+  productId: z.string().min(1),
+  productName: z.string().min(1),
+  amount: z.number().min(0),
+  currency: z.string().default('TWD'),
+  customerEmail: z.string().email().optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
+  successUrl: z.string().url(),
+  cancelUrl: z.string().url().optional(),
+})

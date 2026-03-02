@@ -47,10 +47,11 @@ const config: LetMeUseConfig = {
       adminPath: '/admin/analytics',
     },
     billing: {
-      enabled: false,
+      enabled: true,
       label: 'module.billing',
       icon: 'CreditCard',
       adminPath: '/admin/plans',
+      publicPath: '/checkout',
     },
   },
   payment: 'none',

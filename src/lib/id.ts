@@ -59,3 +59,7 @@ export function generateSubscriptionId(): string {
 export function generateInvoiceId(): string {
   return `inv_${nanoid(12)}`
 }
+
+export function generateCheckoutSessionId(): string {
+  return `cs_${nanoid(16)}`
+}
