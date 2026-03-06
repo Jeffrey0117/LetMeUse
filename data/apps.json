@@ -20,5 +20,16 @@
     ],
     "createdAt": "2026-02-13T19:00:00.000Z",
     "updatedAt": "2026-02-13T19:00:00.000Z"
+  },
+  {
+    "id": "app_DddZG5K0",
+    "name": "Quickky",
+    "secret": "UpTd9lazZg-pfvu7ui8nXJ6XqaRmEl09",
+    "domains": [
+      "https://quickky.isnowfriend.com",
+      "http://localhost:4016"
+    ],
+    "createdAt": "2026-03-06T04:35:00.000Z",
+    "updatedAt": "2026-03-06T04:35:00.000Z"
   }
 ]
