@@ -7,9 +7,10 @@ Auth-as-a-Service platform — embeddable authentication for any app.
 - Next.js 16 + React 19 + TypeScript
 - Tailwind CSS 4
 - File-based JSON storage (users, apps, refresh tokens)
-- JWT (access + refresh tokens)
+- JWT (jose, HS256) — access (24h) + refresh (30d) tokens
 - Email verification via Resend API
-- OAuth support
+- OAuth support (Google, GitHub)
+- esbuild for SDK bundling
 - Port: 4006
 
 ## Run
@@ -24,29 +25,42 @@ pnpm start        # production
 
 ```
 src/app/api/auth/
-  login/route.ts         — Email/password login
-  register/route.ts      — User registration
-  verify-email/route.ts  — Email verification
-  refresh/route.ts       — Token refresh
-  me/route.ts            — Current user profile
-  oauth/[provider]/      — OAuth flows
+  login/route.ts             — Email/password login
+  register/route.ts          — User registration
+  verify-email/route.ts      — Email verification
+  refresh/route.ts           — Token refresh
+  me/route.ts                — Current user profile
+  profile/route.ts           — Update profile (PUT)
+  change-password/route.ts   — Change password
+  avatar/route.ts            — Upload avatar (POST multipart)
+  forgot-password/route.ts   — Password reset
+  logout/route.ts            — Invalidate refresh token
+  providers/route.ts         — List OAuth providers for app
+  oauth/[provider]/          — OAuth flows
 
 src/app/api/admin/
-  apps/route.ts          — App management
-  users/route.ts         — User management
-  sessions/route.ts      — Active sessions
-  stats/route.ts         — System statistics
-  audit-log/route.ts     — Audit trail
+  apps/route.ts              — App management
+  users/route.ts             — User management
+  sessions/route.ts          — Active sessions
+  stats/route.ts             — System statistics
+  audit-log/route.ts         — Audit trail
+  webhooks/route.ts          — Webhook event log + retry
 
 src/lib/
-  auth/jwt.ts            — JWT operations
-  auth/password.ts       — Bcrypt hashing
-  auth/email.ts          — Resend integration
-  auth/middleware.ts      — Auth middleware
-  storage.ts             — JSON file CRUD
-  session.ts             — Session management
-  rate-limit.ts          — Rate limiting
-  audit.ts               — Audit logging
+  auth/jwt.ts                — JWT signing (HS256, jose)
+  auth/password.ts           — Bcrypt hashing
+  auth/email.ts              — Resend integration
+  auth/middleware.ts          — Auth middleware
+  auth-models.ts             — User, App, Session interfaces
+  billing/models.ts          — Plan, Subscription, Invoice
+  rbac.ts                    — Role-based access control
+  webhook.ts                 — Webhook dispatch + retry
+  storage.ts                 — JSON file CRUD
+  session.ts                 — Session management
+  rate-limit.ts              — Rate limiting
+  audit.ts                   — Audit logging
+
+src/sdk/letmeuse-sdk.ts      — Client SDK source (→ /public/letmeuse.js)
 ```
 
 ## API (Key Endpoints)
@@ -54,17 +68,20 @@ src/lib/
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/api/auth/register` | Register user |
-| POST | `/api/auth/login` | Login → JWT + refresh token |
+| POST | `/api/auth/login` | Login -> JWT + refresh token |
 | POST | `/api/auth/verify-email` | Verify email token |
 | POST | `/api/auth/refresh` | Refresh access token |
 | POST | `/api/auth/logout` | Invalidate refresh token |
 | GET | `/api/auth/me` | Current user profile |
+| PUT | `/api/auth/profile` | Update display name |
+| POST | `/api/auth/change-password` | Change password |
+| POST | `/api/auth/avatar` | Upload avatar (multipart) |
+| GET | `/api/auth/providers?app_id=X` | List OAuth providers |
 | GET | `/api/admin/apps` | List registered apps |
 | POST | `/api/admin/apps` | Create app |
 | GET | `/api/admin/users` | List users (search, filter) |
 | GET | `/api/admin/stats` | System statistics |
-| GET | `/api/admin/sessions` | Active sessions |
-| GET | `/api/admin/audit-log` | Audit log |
+| GET | `/api/admin/webhooks` | Webhook event log |
 | GET | `/api/billing/plans` | List billing plans |
 
 ## Env
@@ -82,116 +99,103 @@ src/lib/
 - If token expires: regenerate with `node -e` using jose/HS256, secret from `data/apps.json` demo app
 - Entry: `index.js` (Next.js)
 
-## Integrating LetMeUse into a New Project (IMPORTANT)
+---
 
-This is the standard workflow. Follow it exactly — do NOT explore LetMeUse source code.
+## SDK Client API (`window.letmeuse`)
 
-### Step 1: Register App via CloudPipe MCP
+Script tag: `<script src="https://letmeuse.isnowfriend.com/letmeuse.js" data-app-id="APP_ID" ...>`
 
-```
-letmeuse_create_app({ name: "ProjectName", domains: ["https://project.isnowfriend.com", "http://localhost:PORT"] })
-```
+### Script Tag Attributes
 
-Returns `{ id: "app_XXX", secret: "...", ... }`. Save the `id` — that's your app ID.
+| Attribute | Required | Values | Default | Description |
+|-----------|----------|--------|---------|-------------|
+| `data-app-id` | **Yes** | `"app_XXX"` | — | App ID from create_app |
+| `data-theme` | No | `light`, `dark`, `auto` | `light` | `auto` detects from host page (data-theme attr, .dark class, OS) |
+| `data-accent` | No | CSS hex color | `#2563eb` | Buttons, links, focus rings. **Match your site brand!** |
+| `data-locale` | No | `en`, `zh` | `en` | UI language |
+| `data-mode` | No | `modal`, `redirect` | `modal` | modal = Shadow DOM popup, redirect = navigate to LetMeUse |
 
-**Fallback** (if MCP returns 401): directly edit `data/apps.json`, add entry, then `restart_project("letmeuse")`.
+### Properties (NOT methods)
 
-### Step 2: Frontend — Add SDK
+| Property | Type | Description |
+|----------|------|-------------|
+| `ready` | `boolean` | SDK initialized. **Do NOT call `ready()` or `isReady()`** |
+| `user` | `object \| null` | `{ id, email, displayName, avatar, role, emailVerified }`. **Do NOT call `user()` or `getUser()`** |
 
-Every HTML page that needs auth:
+### Methods
 
-```html
-<script src="https://letmeuse.isnowfriend.com/letmeuse.js"
-  data-app-id="app_XXX" data-locale="zh" data-theme="light">
-</script>
-```
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `login()` | `() => void` | Open login modal (or redirect) |
+| `register()` | `() => void` | Open register modal |
+| `logout()` | `() => Promise<void>` | Clear tokens, notify server, fire callbacks |
+| `getToken()` | `() => string \| null` | Current JWT access token |
+| `onAuthChange(cb)` | `(cb: (user\|null) => void) => () => void` | Subscribe. Returns unsubscribe fn. Fires immediately if ready. |
+| `openProfile()` | `() => void` | Profile settings modal (name, avatar, password, email verify) |
+| `renderAvatar(el)` | `(selector\|HTMLElement) => () => void` | Embed avatar button + dropdown. Returns cleanup fn. |
+| `renderProfileCard(el)` | `(selector\|HTMLElement) => () => void` | Embed profile card widget. Returns cleanup fn. |
+| `openAdmin()` | `() => void` | Open admin panel in new tab |
 
-### Step 3: Frontend — Auth Flow
+---
 
-```javascript
-// Wait for SDK to load
-function waitForLetMeUse() {
-  return new Promise(resolve => {
-    if (typeof letmeuse !== 'undefined') return resolve()
-    const check = setInterval(() => {
-      if (typeof letmeuse !== 'undefined') { clearInterval(check); resolve() }
-    }, 100)
-    setTimeout(() => { clearInterval(check); resolve() }, 3000)
-  })
-}
+## JWT Token Payload
 
-// Auth state management
-await waitForLetMeUse()
-letmeuse.onAuthChange(async (user) => {
-  // user = { id, email, name, ... } or null (logged out)
-  if (user) {
-    // Sync user to your backend
-    const token = letmeuse.getToken()
-    await fetch('/api/auth/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ userId: user.id, email: user.email, name: user.name })
-    })
-  }
-})
-
-// Trigger login modal
-letmeuse.login()
-
-// Get current token for API calls
-const token = letmeuse.getToken()
-
-// Logout
-letmeuse.logout()
+```json
+{ "sub": "usr_XXX", "email": "...", "name": "...", "role": "user", "permissions": ["ads.read"], "app": "app_XXX", "iat": 1234567890, "exp": 1234654290 }
 ```
 
-**IMPORTANT**: `onAuthChange` callback receives `user | null`, NOT a token. Call `letmeuse.getToken()` separately.
+- Algorithm: HS256, signed with app secret
+- Access token: 24h expiry. Refresh token: 30d expiry.
+- **Decode base64url payload only — no signature verification needed (internal trust)**
 
-### Step 4: Backend — JWT Decode Middleware
+---
 
-Decode the LetMeUse JWT to get userId/email. No signature verification needed (internal trust).
+## Webhook Events
 
-```javascript
-// Fastify example
-function decodeToken(token) {
-  const payload = token.split('.')[1]
-  const decoded = Buffer.from(payload, 'base64url').toString()
-  return JSON.parse(decoded)  // { sub: "usr_XXX", email: "...", name: "...", ... }
-}
+POST to app's `webhookUrl`. Signed with `X-LetMeUse-Signature` (HMAC-SHA256 of body using app **secret**).
 
-function requireAuth(request, reply, done) {
-  const auth = request.headers.authorization
-  if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'Unauthorized' })
-  try {
-    const payload = decodeToken(auth.slice(7))
-    request.userId = payload.sub
-    request.userEmail = payload.email
-    request.userName = payload.name
-    done()
-  } catch { reply.code(401).send({ error: 'Invalid token' }) }
-}
-```
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `user.registered` | New signup | userId, email, displayName |
+| `user.login` | Login | userId, email |
+| `user.updated` | Profile changed | userId, email, displayName |
+| `user.disabled` | Admin disables | userId |
+| `user.enabled` | Admin re-enables | userId |
+| `user.deleted` | User deleted | userId |
+| `user.email_verified` | Email verified | userId, email |
+| `user.password_reset` | Password reset | userId |
 
-### Step 5: Backend — Sync User Route
+Envelope: `{ "event": "user.registered", "payload": {...}, "timestamp": "ISO", "appId": "app_XXX" }`
+Headers: `X-LetMeUse-Signature`, `X-LetMeUse-Event`, `Content-Type: application/json`
+Retry: 3 attempts [0s, 2s, 5s], 10s timeout each.
 
-```javascript
-// POST /api/auth/callback — sync LetMeUse user to local DB
-app.post('/api/auth/callback', { preHandler: [requireAuth] }, async (request, reply) => {
-  const user = syncUser({ id: request.userId, email: request.userEmail, name: request.userName })
-  return { success: true, data: user }
-})
-```
+---
 
-### Reference Implementation
+## Integrating LetMeUse
 
-See **Quickky** (`C:\Users\jeffb\Desktop\code\quickky`) for a complete working example:
-- `public/app.js` — frontend auth flow with `waitForLetMeUse()` + `onAuthChange()`
-- `src/middleware/auth.js` — backend JWT decode middleware
-- `src/routes/auth.js` — user sync route
+For full step-by-step integration with code generation, use: `/integrate-letmeuse {project} {domain}`
 
-### Common Mistakes (DO NOT DO)
+Quick reference:
+1. `letmeuse_create_app({ name, domains, webhookUrl })` — save id + secret
+2. Add `<script src=".../letmeuse.js" data-app-id="APP_ID" data-accent="#yourcolor">` to layout
+3. Frontend: `onAuthChange(user => ...)` + `getToken()` for Bearer header
+4. Backend: decode JWT base64url payload to get `{ sub, email, name, role }`
+5. Webhook: verify `X-LetMeUse-Signature` with HMAC-SHA256, handle `user.*` events
 
-- DO NOT explore LetMeUse source code to figure out auth — use this workflow
-- DO NOT try to login to LetMeUse admin UI — use MCP tools or edit data files
-- DO NOT verify JWT signatures — just decode the payload (internal trust)
-- DO NOT store tokens in localStorage manually — the SDK handles it
+Reference: **duk.tw** (React/Next.js), **Quickky** (Vanilla/Fastify)
+
+---
+
+## Common Mistakes
+
+| Mistake | Correct |
+|---------|---------|
+| `letmeuse.ready()` or `isReady()` | `letmeuse.ready` (property) |
+| `letmeuse.user()` or `getUser()` | `letmeuse.user` (property) |
+| Forget `data-accent` (default blue) | Set to your brand color |
+| Forget `data-theme="dark"` | Use `dark` or `auto` for dark sites |
+| Expect token from `onAuthChange` | Callback gets `user`, call `getToken()` separately |
+| Store tokens in localStorage | SDK manages `lmu_{appId}_*` automatically |
+| Verify JWT signature | Decode base64url only (internal trust) |
+| Use app ID for webhook HMAC | Use app **secret** |
+| Explore LetMeUse source code | Use this doc + `/integrate-letmeuse` command |
