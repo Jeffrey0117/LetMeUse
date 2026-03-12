@@ -14,6 +14,14 @@ interface OAuthProviders {
   github?: OAuthConfig
 }
 
+interface PurchaseVerifyConfig {
+  enabled: boolean
+  providerUrl: string
+  providerSecret: string
+  purchasePageUrl: string
+  courseId?: string
+}
+
 interface AppItem {
   id: string
   name: string
@@ -21,6 +29,7 @@ interface AppItem {
   domains: string[]
   webhookUrl?: string
   oauthProviders?: OAuthProviders
+  purchaseVerify?: PurchaseVerifyConfig
   createdAt: string
 }
 
@@ -35,6 +44,8 @@ export default function AdminAppsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [editingOAuth, setEditingOAuth] = useState<string | null>(null)
   const [savingOAuth, setSavingOAuth] = useState(false)
+  const [editingPV, setEditingPV] = useState<string | null>(null)
+  const [savingPV, setSavingPV] = useState(false)
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('lmu_admin_token') : null
 
@@ -117,6 +128,27 @@ export default function AdminAppsPage() {
       // ignore
     } finally {
       setSavingOAuth(false)
+    }
+  }
+
+  async function savePurchaseVerify(appId: string, config: PurchaseVerifyConfig) {
+    if (!token) return
+    setSavingPV(true)
+    try {
+      const res = await fetch(`/api/admin/apps/${appId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ purchaseVerify: config }),
+      })
+      const data = await res.json()
+      if (data.data?.app) {
+        setApps((prev) => prev.map((a) => (a.id === appId ? data.data.app : a)))
+      }
+      setEditingPV(null)
+    } catch {
+      // ignore
+    } finally {
+      setSavingPV(false)
     }
   }
 
@@ -280,6 +312,41 @@ export default function AdminAppsPage() {
                 )}
               </div>
 
+              {/* Purchase Verify Configuration */}
+              <div className="mt-3 pt-3 border-t border-zinc-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-500 text-xs font-medium">Purchase Verify</span>
+                  <button
+                    onClick={() => setEditingPV(editingPV === app.id ? null : app.id)}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    {editingPV === app.id ? t('projects.cancel') : t('projects.edit')}
+                  </button>
+                </div>
+
+                {editingPV !== app.id ? (
+                  <div className="flex gap-2 mt-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                        app.purchaseVerify?.enabled
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-zinc-50 text-zinc-400 border border-zinc-200'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${app.purchaseVerify?.enabled ? 'bg-green-500' : 'bg-zinc-300'}`} />
+                      {app.purchaseVerify?.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                ) : (
+                  <PurchaseVerifyEditForm
+                    app={app}
+                    saving={savingPV}
+                    onSave={(config) => savePurchaseVerify(app.id, config)}
+                    onCancel={() => setEditingPV(null)}
+                  />
+                )}
+              </div>
+
               <div className="mt-3 pt-3 border-t border-zinc-100">
                 <span className="text-zinc-500 text-xs">{t('admin.apps.scriptTag')}</span>
                 <code className="block bg-zinc-50 px-2 py-1.5 rounded text-xs font-mono mt-1 break-all">
@@ -409,6 +476,113 @@ function OAuthEditForm({
           className="px-3 py-1.5 text-xs bg-zinc-900 text-white rounded-md hover:bg-zinc-800 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save OAuth Settings'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 text-xs border border-zinc-200 rounded-md hover:bg-zinc-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PurchaseVerifyEditForm({
+  app,
+  saving,
+  onSave,
+  onCancel,
+}: {
+  app: AppItem
+  saving: boolean
+  onSave: (config: PurchaseVerifyConfig) => void
+  onCancel: () => void
+}) {
+  const [enabled, setEnabled] = useState(app.purchaseVerify?.enabled ?? false)
+  const [providerUrl, setProviderUrl] = useState(app.purchaseVerify?.providerUrl ?? '')
+  const [providerSecret, setProviderSecret] = useState(app.purchaseVerify?.providerSecret ?? '')
+  const [purchasePageUrl, setPurchasePageUrl] = useState(app.purchaseVerify?.purchasePageUrl ?? '')
+  const [courseId, setCourseId] = useState(app.purchaseVerify?.courseId ?? '')
+
+  function handleSave() {
+    onSave({
+      enabled,
+      providerUrl,
+      providerSecret,
+      purchasePageUrl,
+      ...(courseId ? { courseId } : {}),
+    })
+  }
+
+  const inputClass = 'w-full px-2.5 py-1.5 border border-zinc-200 rounded text-xs outline-none focus:border-zinc-400 font-mono'
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="bg-zinc-50 rounded-lg p-3">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-semibold text-zinc-700">Purchase Verification</span>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              className="w-3.5 h-3.5 rounded"
+            />
+            <span className="text-xs text-zinc-600">Enabled</span>
+          </label>
+        </div>
+        <div className="space-y-2">
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Provider URL (verify endpoint)</label>
+            <input
+              type="text"
+              placeholder="https://example.com/functions/v1/verify-purchase"
+              value={providerUrl}
+              onChange={(e) => setProviderUrl(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Provider Secret (Bearer token)</label>
+            <input
+              type="password"
+              placeholder="Bearer token for provider"
+              value={providerSecret}
+              onChange={(e) => setProviderSecret(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Purchase Page URL (user-facing)</label>
+            <input
+              type="text"
+              placeholder="https://classroo.tw/xxx/products/xxx"
+              value={purchasePageUrl}
+              onChange={(e) => setPurchasePageUrl(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-500 mb-1 block">Course/Product ID (optional)</label>
+            <input
+              type="text"
+              placeholder="UUID of the product"
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-3 py-1.5 text-xs bg-zinc-900 text-white rounded-md hover:bg-zinc-800 disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save Purchase Verify'}
         </button>
         <button
           onClick={onCancel}

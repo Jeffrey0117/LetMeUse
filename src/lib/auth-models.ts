@@ -20,6 +20,16 @@ export type OAuthProviders = z.infer<typeof OAuthProvidersSchema>
 export const OAUTH_PROVIDER_NAMES = ['google', 'github'] as const
 export type OAuthProviderName = (typeof OAUTH_PROVIDER_NAMES)[number]
 
+export const PurchaseVerifySchema = z.object({
+  enabled: z.boolean(),
+  providerUrl: z.string().url(),
+  providerSecret: z.string(),
+  purchasePageUrl: z.string().url(),
+  courseId: z.string().optional(),
+})
+
+export type PurchaseVerifyConfig = z.infer<typeof PurchaseVerifySchema>
+
 export const AppSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'Name is required'),
@@ -28,6 +38,7 @@ export const AppSchema = z.object({
   webhookUrl: z.string().optional(),
   oauthProviders: OAuthProvidersSchema.optional(),
   requireEmailVerification: z.boolean().optional(),
+  purchaseVerify: PurchaseVerifySchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -49,6 +60,7 @@ export const UpdateAppSchema = z.object({
   webhookUrl: z.string().optional(),
   oauthProviders: OAuthProvidersSchema.optional(),
   requireEmailVerification: z.boolean().optional(),
+  purchaseVerify: PurchaseVerifySchema.optional(),
 })
 
 export type UpdateAppInput = z.infer<typeof UpdateAppSchema>
