@@ -75,10 +75,12 @@ let providerInstance: PaymentProvider | null = null
 export function getPaymentProvider(): PaymentProvider {
   if (providerInstance) return providerInstance
 
-  // Future: check env vars for Stripe, PayPal, etc.
-  // if (process.env.STRIPE_SECRET_KEY) return new StripeProvider(...)
-  // if (process.env.PAYPAL_CLIENT_ID) return new PayPalProvider(...)
+  if (process.env.STRIPE_SECRET_KEY) {
+    const { StripeProvider } = require('./stripe-provider')
+    providerInstance = new StripeProvider()
+  } else {
+    providerInstance = new StubPaymentProvider()
+  }
 
-  providerInstance = new StubPaymentProvider()
-  return providerInstance
+  return providerInstance!
 }

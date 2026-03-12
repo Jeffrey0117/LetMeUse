@@ -4,6 +4,7 @@ import { createCheckoutSession, getCheckoutSession } from '@/lib/billing/service
 import { getById, APPS_FILE } from '@/lib/storage'
 import type { App } from '@/lib/auth-models'
 import { CreateCheckoutSchema } from '@/lib/billing/models'
+import { getPaymentProvider } from '@/lib/billing/provider'
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
@@ -36,6 +37,33 @@ export async function POST(request: NextRequest) {
       cancelUrl: parsed.cancelUrl,
     })
 
+    // If Stripe is configured and metadata includes a stripePriceId, redirect to Stripe Checkout
+    const provider = getPaymentProvider()
+    if (provider.name === 'stripe' && parsed.metadata?.stripePriceId) {
+      const customerId = parsed.metadata?.stripeCustomerId
+        || await provider.createCustomer({ email: parsed.customerEmail || 'unknown@example.com' })
+
+      const stripeSession = await provider.createCheckoutSession({
+        customerId,
+        priceId: parsed.metadata.stripePriceId,
+        successUrl: parsed.successUrl,
+        cancelUrl: parsed.cancelUrl || parsed.successUrl,
+        metadata: {
+          letmeuseSessionId: session.id,
+          userId: parsed.metadata?.userId || '',
+          appId: parsed.appId,
+        },
+      })
+
+      return success({
+        sessionId: session.id,
+        checkoutUrl: stripeSession.url,
+        stripeSessionId: stripeSession.sessionId,
+        expiresAt: session.expiresAt,
+      }, 201, origin)
+    }
+
+    // Fallback: LetMeUse hosted checkout (stub mode)
     return success({
       sessionId: session.id,
       checkoutUrl: `/checkout?session=${session.id}`,
