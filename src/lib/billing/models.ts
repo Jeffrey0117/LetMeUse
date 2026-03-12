@@ -12,6 +12,7 @@ export const PlanSchema = z.object({
   currency: z.string().default('USD'),
   features: z.array(z.string()),
   limits: z.record(z.string(), z.number()).optional(),
+  stripePriceId: z.string().optional(),
   isActive: z.boolean().default(true),
   sortOrder: z.number().default(0),
   createdAt: z.string(),
@@ -29,6 +30,7 @@ export const CreatePlanSchema = z.object({
   currency: z.string().default('USD'),
   features: z.array(z.string()).default([]),
   limits: z.record(z.string(), z.number()).optional(),
+  stripePriceId: z.string().optional(),
   sortOrder: z.number().optional(),
 })
 
@@ -40,6 +42,7 @@ export const UpdatePlanSchema = z.object({
   features: z.array(z.string()).optional(),
   limits: z.record(z.string(), z.number()).optional(),
   isActive: z.boolean().optional(),
+  stripePriceId: z.string().optional(),
   sortOrder: z.number().optional(),
 })
 

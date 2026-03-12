@@ -54,7 +54,7 @@ const config: LetMeUseConfig = {
       publicPath: '/checkout',
     },
   },
-  payment: 'none',
+  payment: 'stripe',
   superAdminEmails: [],
 }
 
