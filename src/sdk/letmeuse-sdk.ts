@@ -40,6 +40,12 @@
     'switch.toRegister': { en: "Don't have an account? Sign up", zh: '沒有帳號？註冊' },
     'switch.toLogin': { en: 'Already have an account? Sign in', zh: '已有帳號？登入' },
     'error.generic': { en: 'Something went wrong', zh: '發生錯誤' },
+    'error.invalidCredentials': { en: 'Invalid email or password', zh: '帳號或密碼錯誤' },
+    'error.accountDisabled': { en: 'Account is disabled', zh: '帳號已停用' },
+    'error.loginFailed': { en: 'Login failed', zh: '登入失敗' },
+    'error.registrationFailed': { en: 'Registration failed', zh: '註冊失敗' },
+    'error.emailInUse': { en: 'Email already registered', zh: '此信箱已被註冊' },
+    'error.tooManyAttempts': { en: 'Too many attempts, please try again later', zh: '嘗試次數過多，請稍後再試' },
     'msg.loading': { en: 'Loading...', zh: '載入中...' },
     'oauth.or': { en: 'or continue with', zh: '或使用以下方式登入' },
     'oauth.google': { en: 'Google', zh: 'Google' },
@@ -78,6 +84,20 @@
     return i18n[key]?.[locale] ?? i18n[key]?.en ?? key
   }
 
+  const errorMap: Record<string, string> = {
+    'Invalid credentials': 'error.invalidCredentials',
+    'Account is disabled': 'error.accountDisabled',
+    'Login failed': 'error.loginFailed',
+    'Registration failed': 'error.registrationFailed',
+    'Email already registered': 'error.emailInUse',
+    'Too many requests': 'error.tooManyAttempts',
+  }
+
+  function translateError(apiError: string): string {
+    const key = errorMap[apiError]
+    return key ? t(key) : apiError
+  }
+
   // ── Token storage ───────────────────────────────────────
 
   const STORAGE_PREFIX = `lmu_${appId}_`
@@ -111,7 +131,10 @@
       body: JSON.stringify(body),
     })
     const json = await res.json()
-    if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
+    if (!res.ok) {
+      const raw = (json as { error?: string }).error ?? ''
+      throw new Error(translateError(raw) || t('error.generic'))
+    }
     return (json as { data?: unknown }).data ?? json
   }
 
@@ -120,7 +143,10 @@
     if (token) headers['Authorization'] = `Bearer ${token}`
     const res = await fetch(`${baseUrl}${path}`, { headers })
     const json = await res.json()
-    if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
+    if (!res.ok) {
+      const raw = (json as { error?: string }).error ?? ''
+      throw new Error(translateError(raw) || t('error.generic'))
+    }
     return (json as { data?: unknown }).data ?? json
   }
 
@@ -131,7 +157,10 @@
       body: JSON.stringify(body),
     })
     const json = await res.json()
-    if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
+    if (!res.ok) {
+      const raw = (json as { error?: string }).error ?? ''
+      throw new Error(translateError(raw) || t('error.generic'))
+    }
     return (json as { data?: unknown }).data ?? json
   }
 
@@ -142,7 +171,10 @@
       body: JSON.stringify(body),
     })
     const json = await res.json()
-    if (!res.ok) throw new Error((json as { error?: string }).error ?? t('error.generic'))
+    if (!res.ok) {
+      const raw = (json as { error?: string }).error ?? ''
+      throw new Error(translateError(raw) || t('error.generic'))
+    }
     return (json as { data?: unknown }).data ?? json
   }
 
