@@ -10,6 +10,9 @@ import { FeedbackFormFields } from '@/components/widgets/feedback-form-fields'
 import { useLang } from '@/components/layout/lang-provider'
 import type { TranslationKey } from '@/lib/i18n'
 import type { LoginFormConfig, FeedbackFormConfig } from '@/lib/models'
+import { EmbedCodeBlock } from './embed-code-block'
+import { AdContentFields } from './ad-content-fields'
+import { StyleFields } from './style-fields'
 import {
   AD_TYPES,
   AD_STATUSES,
@@ -70,80 +73,6 @@ const defaultStyle = {
   maxWidth: '100%',
 }
 
-const EMBED_ATTRS: { attr: string; key: TranslationKey; example: string }[] = [
-  { attr: 'data-bg-color', key: 'adForm.embedAttr.bgColor', example: '#1e293b' },
-  { attr: 'data-text-color', key: 'adForm.embedAttr.textColor', example: '#ffffff' },
-  { attr: 'data-font-size', key: 'adForm.embedAttr.fontSize', example: '16px' },
-  { attr: 'data-cta-bg-color', key: 'adForm.embedAttr.ctaBgColor', example: '#3b82f6' },
-  { attr: 'data-cta-text-color', key: 'adForm.embedAttr.ctaTextColor', example: '#fff' },
-  { attr: 'data-border-radius', key: 'adForm.embedAttr.borderRadius', example: '12px' },
-  { attr: 'data-padding', key: 'adForm.embedAttr.padding', example: '20px' },
-  { attr: 'data-max-width', key: 'adForm.embedAttr.maxWidth', example: '600px' },
-  { attr: 'data-text-align', key: 'adForm.embedAttr.textAlign', example: 'center' },
-]
-
-function EmbedCodeBlock({ adId, t }: { adId: string; t: (key: TranslationKey) => string }) {
-  const [copied, setCopied] = useState(false)
-  const [attrsOpen, setAttrsOpen] = useState(false)
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'YOUR_DOMAIN'
-  const code = `<div data-lmu-id="${adId}"></div>\n<script src="${origin}/embed/letmeuse.js"></script>`
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(code)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // fallback: select text
-    }
-  }
-
-  return (
-    <div className="mt-6 rounded-lg border border-zinc-200 bg-white p-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-zinc-700">
-          {t('adForm.embedCode')}
-        </h3>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
-        >
-          {copied ? t('adForm.copied') : t('adForm.copy')}
-        </button>
-      </div>
-      <pre className="rounded bg-zinc-100 p-3 text-xs text-zinc-700 overflow-x-auto select-all">
-        {code}
-      </pre>
-
-      <div className="mt-3 border-t border-zinc-100 pt-3">
-        <button
-          type="button"
-          onClick={() => setAttrsOpen((prev) => !prev)}
-          className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
-        >
-          <span className={`inline-block transition-transform ${attrsOpen ? 'rotate-90' : ''}`}>&#9654;</span>
-          {t('adForm.embedAttrsTitle')}
-        </button>
-        {attrsOpen && (
-          <div className="mt-2">
-            <p className="text-xs text-zinc-500 mb-2">{t('adForm.embedAttrsDesc')}</p>
-            <div className="space-y-1">
-              {EMBED_ATTRS.map(({ attr, key, example }) => (
-                <div key={attr} className="flex items-baseline gap-2 text-xs">
-                  <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-600 whitespace-nowrap">{attr}</code>
-                  <span className="text-zinc-400">&mdash;</span>
-                  <span className="text-zinc-500">{t(key)}</span>
-                  <span className="text-zinc-300 ml-auto font-mono">{example}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFormProps) {
   const router = useRouter()
@@ -280,25 +209,6 @@ export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFo
 
   function updateWidgetConfig(config: Record<string, unknown>) {
     setForm((prev) => ({ ...prev, widgetConfig: config }))
-  }
-
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const formData = new FormData()
-    formData.append('file', file)
-    try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.error)
-        return
-      }
-      const data = await res.json()
-      updateForm({ imageUrl: data.url })
-    } catch {
-      setError('Upload failed')
-    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -471,114 +381,19 @@ export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFo
 
           {/* Ad-specific fields */}
           {form.category === 'ad' && (
-            <>
-              <div>
-                <label className={labelClass}>{t('adForm.headline')}</label>
-                <input
-                  className={inputClass}
-                  value={form.headline}
-                  onChange={(e) => updateForm({ headline: e.target.value })}
-                  placeholder={t('adForm.headlinePlaceholder')}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>{t('adForm.bodyText')}</label>
-                <textarea
-                  className={inputClass}
-                  rows={3}
-                  value={form.bodyText}
-                  onChange={(e) => updateForm({ bodyText: e.target.value })}
-                  placeholder={t('adForm.bodyTextPlaceholder')}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>{t('adForm.ctaText')}</label>
-                  <input
-                    className={inputClass}
-                    value={form.ctaText}
-                    onChange={(e) => updateForm({ ctaText: e.target.value })}
-                    placeholder="Click Here"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>{t('adForm.ctaUrl')}</label>
-                  <input
-                    className={inputClass}
-                    type="url"
-                    value={form.ctaUrl}
-                    onChange={(e) => updateForm({ ctaUrl: e.target.value })}
-                    placeholder="https://..."
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>{t('adForm.image')}</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="text-sm text-zinc-600"
-                />
-                {form.imageUrl && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">{form.imageUrl}</span>
-                    <button
-                      type="button"
-                      onClick={() => updateForm({ imageUrl: '' })}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      {t('adForm.removeImage')}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className={labelClass}>{t('adForm.backgroundImage')}</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (!file) return
-                    const formData = new FormData()
-                    formData.append('file', file)
-                    try {
-                      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-                      if (!res.ok) {
-                        const data = await res.json()
-                        setError(data.error)
-                        return
-                      }
-                      const data = await res.json()
-                      updateForm({ backgroundImageUrl: data.url })
-                    } catch {
-                      setError('Upload failed')
-                    }
-                  }}
-                  className="text-sm text-zinc-600"
-                />
-                {form.backgroundImageUrl && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">{form.backgroundImageUrl}</span>
-                    <button
-                      type="button"
-                      onClick={() => updateForm({ backgroundImageUrl: '' })}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      {t('adForm.removeBackgroundImage')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
+            <AdContentFields
+              headline={form.headline}
+              bodyText={form.bodyText}
+              ctaText={form.ctaText}
+              ctaUrl={form.ctaUrl}
+              imageUrl={form.imageUrl}
+              backgroundImageUrl={form.backgroundImageUrl}
+              onUpdate={(updates) => updateForm(updates)}
+              onError={setError}
+              inputClass={inputClass}
+              labelClass={labelClass}
+              t={t}
+            />
           )}
 
           {/* Login Form fields */}
@@ -607,106 +422,13 @@ export function AdForm({ mode, adId, defaultProjectId, defaultTemplateId }: AdFo
             </div>
           )}
 
-          <div className="border-t border-zinc-200 pt-4">
-            <h3 className="text-sm font-semibold text-zinc-700 mb-3">
-              {t('adForm.style')}
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>{t('adForm.bgColor')}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={form.style.backgroundColor}
-                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
-                    className="h-9 w-12 rounded border border-zinc-300 cursor-pointer"
-                  />
-                  <input
-                    className={inputClass}
-                    value={form.style.backgroundColor}
-                    onChange={(e) => updateStyle({ backgroundColor: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>{t('adForm.textColor')}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={form.style.textColor}
-                    onChange={(e) => updateStyle({ textColor: e.target.value })}
-                    className="h-9 w-12 rounded border border-zinc-300 cursor-pointer"
-                  />
-                  <input
-                    className={inputClass}
-                    value={form.style.textColor}
-                    onChange={(e) => updateStyle({ textColor: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>{t('adForm.ctaBgColor')}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={form.style.ctaBackgroundColor}
-                    onChange={(e) => updateStyle({ ctaBackgroundColor: e.target.value })}
-                    className="h-9 w-12 rounded border border-zinc-300 cursor-pointer"
-                  />
-                  <input
-                    className={inputClass}
-                    value={form.style.ctaBackgroundColor}
-                    onChange={(e) => updateStyle({ ctaBackgroundColor: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>{t('adForm.ctaTextColor')}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={form.style.ctaTextColor}
-                    onChange={(e) => updateStyle({ ctaTextColor: e.target.value })}
-                    className="h-9 w-12 rounded border border-zinc-300 cursor-pointer"
-                  />
-                  <input
-                    className={inputClass}
-                    value={form.style.ctaTextColor}
-                    onChange={(e) => updateStyle({ ctaTextColor: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-3">
-              <div>
-                <label className={labelClass}>{t('adForm.borderRadius')}</label>
-                <input
-                  className={inputClass}
-                  value={form.style.borderRadius}
-                  onChange={(e) => updateStyle({ borderRadius: e.target.value })}
-                  placeholder="8px"
-                />
-              </div>
-              <div>
-                <label className={labelClass}>{t('adForm.padding')}</label>
-                <input
-                  className={inputClass}
-                  value={form.style.padding}
-                  onChange={(e) => updateStyle({ padding: e.target.value })}
-                  placeholder="16px"
-                />
-              </div>
-              <div>
-                <label className={labelClass}>{t('adForm.maxWidth')}</label>
-                <input
-                  className={inputClass}
-                  value={form.style.maxWidth}
-                  onChange={(e) => updateStyle({ maxWidth: e.target.value })}
-                  placeholder="100%"
-                />
-              </div>
-            </div>
-          </div>
+          <StyleFields
+            style={form.style}
+            onStyleChange={updateStyle}
+            inputClass={inputClass}
+            labelClass={labelClass}
+            t={t}
+          />
 
           <div className="flex gap-3 pt-2">
             <button

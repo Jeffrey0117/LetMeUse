@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useLang } from '@/components/layout/lang-provider'
+import { PlanFormFields } from './plan-form'
 
 interface PlanItem {
   id: string
@@ -237,80 +238,32 @@ export default function AdminPlansPage() {
 
       {showCreate && (
         <div className="mb-6 rounded-lg border border-zinc-200 bg-white p-4 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder={t('admin.plans.name')}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            />
-            <input
-              type="text"
-              placeholder={t('admin.plans.description')}
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            />
-            <div className="flex gap-2">
-              <input
-                type="number"
-                placeholder={t('admin.plans.priceMonthly')}
-                value={newPriceMonthly}
-                onChange={(e) => setNewPriceMonthly(e.target.value)}
-                min="0"
-                step="0.01"
-                className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              />
-              <input
-                type="number"
-                placeholder={t('admin.plans.priceYearly')}
-                value={newPriceYearly}
-                onChange={(e) => setNewPriceYearly(e.target.value)}
-                min="0"
-                step="0.01"
-                className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={newCurrency}
-                onChange={(e) => setNewCurrency(e.target.value)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              >
-                <option value="USD">USD</option>
-                <option value="TWD">TWD</option>
-                <option value="EUR">EUR</option>
-                <option value="JPY">JPY</option>
-              </select>
-              <input
-                type="number"
-                placeholder={t('admin.plans.sortOrder')}
-                value={newSortOrder}
-                onChange={(e) => setNewSortOrder(e.target.value)}
-                min="0"
-                className="w-24 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-          <input
-            type="text"
-            placeholder={t('admin.plans.featuresPlaceholder')}
-            value={newFeatures}
-            onChange={(e) => setNewFeatures(e.target.value)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          <PlanFormFields
+            values={{
+              name: newName,
+              description: newDescription,
+              priceMonthly: newPriceMonthly,
+              priceYearly: newPriceYearly,
+              currency: newCurrency,
+              features: newFeatures,
+              isActive: newIsActive,
+              sortOrder: newSortOrder,
+            }}
+            onChange={(field, value) => {
+              const setters: Record<string, (v: any) => void> = {
+                name: setNewName,
+                description: setNewDescription,
+                priceMonthly: setNewPriceMonthly,
+                priceYearly: setNewPriceYearly,
+                currency: setNewCurrency,
+                features: setNewFeatures,
+                isActive: setNewIsActive,
+                sortOrder: setNewSortOrder,
+              }
+              setters[field]?.(value)
+            }}
+            t={t}
           />
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-zinc-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={newIsActive}
-                onChange={(e) => setNewIsActive(e.target.checked)}
-                className="rounded border-zinc-300"
-              />
-              {t('admin.plans.isActive')}
-            </label>
-          </div>
           <div className="flex gap-2">
             <button
               onClick={handleCreate}
@@ -356,80 +309,32 @@ export default function AdminPlansPage() {
                   {editingId === plan.id ? (
                     <td colSpan={7} className="px-4 py-3">
                       <div className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            placeholder={t('admin.plans.name')}
-                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            type="text"
-                            value={editDescription}
-                            onChange={(e) => setEditDescription(e.target.value)}
-                            placeholder={t('admin.plans.description')}
-                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-                          />
-                          <div className="flex gap-2">
-                            <input
-                              type="number"
-                              value={editPriceMonthly}
-                              onChange={(e) => setEditPriceMonthly(e.target.value)}
-                              placeholder={t('admin.plans.priceMonthly')}
-                              min="0"
-                              step="0.01"
-                              className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              value={editPriceYearly}
-                              onChange={(e) => setEditPriceYearly(e.target.value)}
-                              placeholder={t('admin.plans.priceYearly')}
-                              min="0"
-                              step="0.01"
-                              className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <select
-                              value={editCurrency}
-                              onChange={(e) => setEditCurrency(e.target.value)}
-                              className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-                            >
-                              <option value="USD">USD</option>
-                              <option value="TWD">TWD</option>
-                              <option value="EUR">EUR</option>
-                              <option value="JPY">JPY</option>
-                            </select>
-                            <input
-                              type="number"
-                              value={editSortOrder}
-                              onChange={(e) => setEditSortOrder(e.target.value)}
-                              placeholder={t('admin.plans.sortOrder')}
-                              min="0"
-                              className="w-24 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <input
-                          type="text"
-                          value={editFeatures}
-                          onChange={(e) => setEditFeatures(e.target.value)}
-                          placeholder={t('admin.plans.featuresPlaceholder')}
-                          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                        <PlanFormFields
+                          values={{
+                            name: editName,
+                            description: editDescription,
+                            priceMonthly: editPriceMonthly,
+                            priceYearly: editPriceYearly,
+                            currency: editCurrency,
+                            features: editFeatures,
+                            isActive: editIsActive,
+                            sortOrder: editSortOrder,
+                          }}
+                          onChange={(field, value) => {
+                            const setters: Record<string, (v: any) => void> = {
+                              name: setEditName,
+                              description: setEditDescription,
+                              priceMonthly: setEditPriceMonthly,
+                              priceYearly: setEditPriceYearly,
+                              currency: setEditCurrency,
+                              features: setEditFeatures,
+                              isActive: setEditIsActive,
+                              sortOrder: setEditSortOrder,
+                            }
+                            setters[field]?.(value)
+                          }}
+                          t={t}
                         />
-                        <div className="flex items-center gap-4">
-                          <label className="flex items-center gap-2 text-sm text-zinc-700 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={editIsActive}
-                              onChange={(e) => setEditIsActive(e.target.checked)}
-                              className="rounded border-zinc-300"
-                            />
-                            {t('admin.plans.isActive')}
-                          </label>
-                        </div>
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleSaveEdit(plan.id)}

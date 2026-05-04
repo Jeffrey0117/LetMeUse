@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "pnpm build:embed && pnpm build:sdk && next build",
     "build:embed": "npx esbuild src/embed/letmeuse-embed.ts --bundle --minify --format=iife --outfile=public/embed/letmeuse.js",
-    "build:sdk": "npx esbuild src/sdk/letmeuse-sdk.ts --bundle --minify --format=iife --outfile=public/letmeuse.js",
+    "build:sdk": "npx esbuild src/sdk/index.ts --bundle --minify --format=iife --outfile=public/letmeuse.js",
     "start": "next start",
     "lint": "eslint",
-    "seed": "npx tsx scripts/seed.ts"
+    "seed": "npx tsx scripts/seed.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -34,11 +37,13 @@
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.5",
     "esbuild": "^0.27.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.5"
   }
 }
