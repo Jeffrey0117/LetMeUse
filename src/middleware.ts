@@ -33,13 +33,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const origin = request.headers.get('origin')
 
-  // ── Admin page protection ───────────────────────────────
+  // ── Admin page protection ─────────────────────────────
   if (pathname.startsWith('/admin')) {
     const token = request.cookies.get('lmu_admin_token')?.value
       ?? request.headers.get('x-admin-token')
 
-    // No server-side JWT verification in edge middleware (no file system),
-    // but we can check token presence. API calls will do full JWT verification.
     if (!token) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
@@ -54,25 +52,36 @@ export function middleware(request: NextRequest) {
 
   const isPublic = isPublicCorsPath(pathname)
 
-  // Preflight OPTIONS
+  // ── CSRF double-submit cookie (admin/non-public endpoints) ──
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && !isPublic) {
+    const csrfCookie = request.cookies.get('lmu_csrf')?.value
+    const csrfHeader = request.headers.get('x-csrf-token')
+
+    if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+      return NextResponse.json(
+        { success: false, error: 'CSRF token mismatch' },
+        { status: 403 }
+      )
+    }
+  }
+
+  // ── Preflight OPTIONS ──────────────────────────────────
   if (request.method === 'OPTIONS') {
-    const allowOrigin = isPublic
-      ? (origin ?? '*')
-      : (origin && isAllowedOrigin(origin) ? origin : '')
+    const allowOrigin = origin && (isAllowedOrigin(origin) || isPublic) ? origin : ''
 
     return new NextResponse(null, {
       status: 204,
       headers: {
         'Access-Control-Allow-Origin': allowOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token',
         'Access-Control-Max-Age': '86400',
         'Vary': 'Origin',
       },
     })
   }
 
-  // State-changing requests: validate Origin (skip for public GET-only routes)
+  // ── State-changing requests: validate Origin ────────────
   const isStateMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
   if (isStateMutating && origin && !isPublic && !isAllowedOrigin(origin)) {
     return NextResponse.json(
@@ -81,23 +90,45 @@ export function middleware(request: NextRequest) {
     )
   }
 
-  // Set CORS headers on response
+  // ── Set CORS headers on response ───────────────────────
   const response = NextResponse.next()
 
-  if (isPublic) {
-    response.headers.set('Access-Control-Allow-Origin', origin ?? '*')
-    if (pathname.startsWith('/api/serve/')) {
-      response.headers.set('Cache-Control', 'public, max-age=60')
-    }
-  } else if (origin) {
-    const validOrigin = isAllowedOrigin(origin) ? origin : ''
-    response.headers.set('Access-Control-Allow-Origin', validOrigin)
+  const allowedOrigin = (origin && (isAllowedOrigin(origin) || isPublic)) ? origin : ''
+
+  if (allowedOrigin) {
+    response.headers.set('Access-Control-Allow-Origin', allowedOrigin)
+  }
+
+  if (pathname.startsWith('/api/serve/')) {
+    response.headers.set('Cache-Control', 'public, max-age=60')
   }
 
   if (origin || isPublic) {
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token')
     response.headers.set('Vary', 'Origin')
+  }
+
+  // ── Security headers ────────────────────────────────────
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+
+  // ── Set CSRF cookie if not present ────────────────────
+  if (!request.cookies.get('lmu_csrf')) {
+    const csrfToken = crypto.randomUUID()
+    response.cookies.set('lmu_csrf', csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24,
+    })
   }
 
   return response

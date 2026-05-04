@@ -36,11 +36,26 @@ function resolveOldAvatarPath(avatarUrl: string): string | null {
   if (!avatarUrl.startsWith(AVATAR_URL_PREFIX)) {
     return null
   }
-  const filename = avatarUrl.slice(AVATAR_URL_PREFIX.length + 1)
-  if (!filename || filename.includes('..') || filename.includes('/')) {
+
+  const rawFilename = avatarUrl.slice(AVATAR_URL_PREFIX.length + 1)
+  if (!rawFilename) return null
+
+  let filename: string
+  try {
+    filename = decodeURIComponent(rawFilename)
+  } catch {
     return null
   }
-  return path.join(AVATAR_DIR, filename)
+
+  const resolved = path.resolve(AVATAR_DIR, filename)
+  const normalizedTarget = path.normalize(resolved)
+  const normalizedBase = path.normalize(AVATAR_DIR)
+
+  if (!normalizedTarget.startsWith(normalizedBase + path.sep) && normalizedTarget !== normalizedBase) {
+    return null
+  }
+
+  return resolved
 }
 
 export async function OPTIONS(request: NextRequest) {

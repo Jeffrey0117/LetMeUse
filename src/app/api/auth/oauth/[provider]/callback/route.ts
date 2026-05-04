@@ -12,6 +12,32 @@ import { createSession } from '@/lib/session'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
+function validateRedirectUrl(redirectUrl: string | undefined, app: App): string {
+  const fallback = `${BASE_URL}/login`
+  if (!redirectUrl) return fallback
+
+  try {
+    const url = new URL(redirectUrl)
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return fallback
+    }
+
+    const allowedHosts = [
+      ...(app.domains ?? []),
+      new URL(BASE_URL).hostname,
+    ]
+
+    if (!allowedHosts.some((d) => url.hostname === d || url.hostname.endsWith(`.${d}`))) {
+      return fallback
+    }
+
+    return url.toString()
+  } catch {
+    return fallback
+  }
+}
+
 type RouteParams = { params: Promise<{ provider: string }> }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -181,7 +207,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Build redirect URL with tokens in hash fragment
-    const targetUrl = redirectUrl ?? `${BASE_URL}/login`
+    const targetUrl = validateRedirectUrl(redirectUrl, app)
     const url = new URL(targetUrl)
     url.hash = `lmu_token=${accessToken}&lmu_refresh=${refreshTokenJWT}&lmu_provider=${providerName}`
 

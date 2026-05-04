@@ -3,7 +3,7 @@ import { LoginSchema, type AuthUser, type RefreshToken, toPublicUser } from '@/l
 import type { App } from '@/lib/auth-models'
 import { getAll, getById, update, create, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import { generateRefreshTokenId } from '@/lib/id'
-import { verifyPassword } from '@/lib/auth/password'
+import { verifyPassword, DUMMY_HASH } from '@/lib/auth/password'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, recordFailure, resetFailures, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
@@ -44,21 +44,17 @@ export async function POST(request: NextRequest) {
       (u) => u.appId === appId && u.email.toLowerCase() === email.toLowerCase()
     )
 
-    if (!user) {
+    // Always run bcrypt to prevent timing-based user enumeration
+    const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH)
+
+    if (!user || !valid) {
       recordFailure(request, 'login', RATE_LIMITS.login)
-      writeAuditLog({ action: 'user.login_failed', actorId: 'unknown', appId, details: { email }, ip: request.headers.get('x-forwarded-for') ?? undefined })
+      writeAuditLog({ action: 'user.login_failed', actorId: user?.id ?? 'unknown', actorEmail: user?.email, appId, details: user ? undefined : { email }, ip: request.headers.get('x-forwarded-for') ?? undefined })
       return fail('Invalid credentials', 401, origin)
     }
 
     if (user.disabled) {
       return fail('Account is disabled', 403, origin)
-    }
-
-    const valid = await verifyPassword(password, user.passwordHash)
-    if (!valid) {
-      recordFailure(request, 'login', RATE_LIMITS.login)
-      writeAuditLog({ action: 'user.login_failed', actorId: user.id, actorEmail: user.email, appId, ip: request.headers.get('x-forwarded-for') ?? undefined })
-      return fail('Invalid credentials', 401, origin)
     }
 
     resetFailures(request, 'login')

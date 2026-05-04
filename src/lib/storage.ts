@@ -1,7 +1,9 @@
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import { readFile, writeFile, mkdir, rename } from 'fs/promises'
 import path from 'path'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
+
+const writeQueues = new Map<string, Promise<void>>()
 
 async function ensureDataDir(): Promise<void> {
   await mkdir(DATA_DIR, { recursive: true })
@@ -21,15 +23,20 @@ async function readJsonFile<T>(filename: string): Promise<T[]> {
 async function writeJsonFile<T>(filename: string, data: T[]): Promise<void> {
   await ensureDataDir()
   const filePath = path.join(DATA_DIR, filename)
-  const tmpPath = `${filePath}.tmp`
-  await writeFile(tmpPath, JSON.stringify(data, null, 2), 'utf-8')
-  await writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
-  // Clean up tmp file (best effort)
+
+  // Serialize writes per file to prevent race conditions
+  const prevWrite = writeQueues.get(filePath) ?? Promise.resolve()
+  let resolve: () => void
+  const currentWrite = new Promise<void>((r) => { resolve = r })
+  writeQueues.set(filePath, currentWrite)
+
   try {
-    const { unlink } = await import('fs/promises')
-    await unlink(tmpPath)
-  } catch {
-    // ignore
+    await prevWrite
+    const tmpPath = `${filePath}.tmp.${Date.now()}`
+    await writeFile(tmpPath, JSON.stringify(data, null, 2), 'utf-8')
+    await rename(tmpPath, filePath)
+  } finally {
+    resolve!()
   }
 }
 

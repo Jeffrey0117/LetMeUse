@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server'
+﻿import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import type { AuthUser } from '@/lib/auth-models'
 import { toPublicUser } from '@/lib/auth-models'
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const appId = searchParams.get('appId')
     const search = searchParams.get('search')
     const page = parseInt(searchParams.get('page') ?? '1', 10)
-    const limit = parseInt(searchParams.get('limit') ?? '20', 10)
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)))
 
     let users = await getAll<AuthUser>(USERS_FILE)
 

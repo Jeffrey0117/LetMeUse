@@ -38,8 +38,14 @@ function getEntry(key: string): RateLimitEntry {
 }
 
 function getClientIp(request: NextRequest): string {
+  const trustProxy = process.env.TRUST_PROXY === 'true'
+
+  if (trustProxy) {
+    const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    if (forwarded) return forwarded
+  }
+
   return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     request.headers.get('x-real-ip') ??
     'unknown'
   )
