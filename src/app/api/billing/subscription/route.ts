@@ -30,8 +30,7 @@ export async function GET(request: NextRequest) {
 
     return success({ subscription, plan }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get subscription'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -76,8 +75,7 @@ export async function POST(request: NextRequest) {
 
     return success({ subscription, plan }, 201, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to subscribe'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -101,7 +99,6 @@ export async function DELETE(request: NextRequest) {
 
     return success({ subscription: cancelled }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to cancel subscription'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

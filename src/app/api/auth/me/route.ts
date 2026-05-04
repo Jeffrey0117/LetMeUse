@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
 
     return success({ user: toPublicUser(user) }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get user'
-    return fail(message, 500, origin)
+        return fail('Failed to load profile', 500, origin)
   }
 }

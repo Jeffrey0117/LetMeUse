@@ -53,7 +53,6 @@ export async function PUT(request: NextRequest) {
 
     return success({ user: toPublicUser(updated) }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Profile update failed'
-    return fail(message, 500, origin)
+        return fail('Profile update failed', 500, origin)
   }
 }

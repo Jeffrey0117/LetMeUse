@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
 
     return success({ message: 'If the email exists, a reset link has been sent.' }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to process request'
-    return fail(message, 500, origin)
+        return fail('Password reset request failed', 500, origin)
   }
 }

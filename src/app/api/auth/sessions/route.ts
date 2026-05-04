@@ -33,8 +33,7 @@ export async function GET(request: NextRequest) {
 
     return success({ sessions: safe }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get sessions'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -91,7 +90,6 @@ export async function DELETE(request: NextRequest) {
 
     return success({ revoked: true }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to revoke session'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

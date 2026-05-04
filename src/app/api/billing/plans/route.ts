@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
 
     return success({ plans }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get plans'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

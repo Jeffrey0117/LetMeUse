@@ -31,8 +31,7 @@ export async function GET(
 
     return success({ user: toPublicUser(user) }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get user'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -94,8 +93,7 @@ export async function PATCH(
 
     return success({ user: toPublicUser(updated) }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update user'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -138,7 +136,6 @@ export async function DELETE(
 
     return success({ deleted: true }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to delete user'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

@@ -39,7 +39,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.redirect(authorizeUrl)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'OAuth initialization failed'
-    return fail(message, 500)
+        return fail('Authentication failed', 500)
   }
 }

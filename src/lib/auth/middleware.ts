@@ -77,7 +77,7 @@ export async function requirePermission(
   const userPermissions = (result.payload.permissions ?? []) as string[]
   if (!userPermissions.includes(permission)) {
     const origin = request.headers.get('origin')
-    return fail(`Missing permission: ${permission}`, 403, origin)
+    return fail('Forbidden', 403, origin)
   }
 
   return result

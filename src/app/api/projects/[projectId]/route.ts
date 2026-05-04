@@ -15,8 +15,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
     return success(project)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch project'
-    return fail(message, 500)
+        return fail('Operation failed', 500)
   }
 }
 
@@ -40,8 +39,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
     return success(updated)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update project'
-    return fail(message, 500)
+        return fail('Operation failed', 500)
   }
 }
 
@@ -60,7 +58,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     }
     return success({ deleted: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to delete project'
-    return fail(message, 500)
+        return fail('Operation failed', 500)
   }
 }

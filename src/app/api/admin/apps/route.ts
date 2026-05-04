@@ -22,8 +22,7 @@ export async function GET(request: NextRequest) {
     const apps = await getAll<App>(APPS_FILE)
     return success({ apps }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to list apps'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -58,7 +57,6 @@ export async function POST(request: NextRequest) {
     await create<App>(APPS_FILE, app)
     return success({ app }, 201, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create app'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

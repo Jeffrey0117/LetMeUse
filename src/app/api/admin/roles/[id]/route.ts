@@ -29,8 +29,7 @@ export async function GET(
 
     return success({ role }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get role'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -82,8 +81,7 @@ export async function PATCH(
 
     return success({ role: updated }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update role'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -114,7 +112,6 @@ export async function DELETE(
 
     return success({ deleted: true }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to delete role'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

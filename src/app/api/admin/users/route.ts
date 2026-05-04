@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
       origin
     )
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to list users'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
 
     return paginated(entries, { total, page, limit }, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get audit log'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

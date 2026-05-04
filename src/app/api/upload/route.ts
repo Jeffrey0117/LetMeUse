@@ -86,7 +86,6 @@ export async function POST(request: NextRequest) {
     const url = `/uploads/${filename}`
     return success({ url, filename, ext, size: file.size }, 201, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Upload failed'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

@@ -27,8 +27,7 @@ export async function GET(request: NextRequest) {
     const plans = await getAllPlansForApp(appId)
     return success({ plans }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get plans'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -46,7 +45,6 @@ export async function POST(request: NextRequest) {
 
     return success({ plan }, 201, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create plan'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

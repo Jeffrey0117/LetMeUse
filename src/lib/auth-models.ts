@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-// ── App — represents a registered client app ────────────
+/** Strip all HTML tags from a string to prevent XSS via displayName. */
+function stripHtml(input: string): string {
+  return input.replace(/<[^>]*>/g, '').trim()
+}
+
+// ?�?� App ??represents a registered client app ?�?�?�?�?�?�?�?�?�?�?�?�
 
 export const OAuthProviderConfigSchema = z.object({
   clientId: z.string(),
@@ -65,7 +70,7 @@ export const UpdateAppSchema = z.object({
 
 export type UpdateAppInput = z.infer<typeof UpdateAppSchema>
 
-// ── AuthUser — belongs to an app ────────────────────────
+// ?�?� AuthUser ??belongs to an app ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export const AUTH_ROLES = ['user', 'admin'] as const
 
@@ -98,7 +103,7 @@ export const RegisterSchema = z.object({
   appId: z.string().min(1, 'App ID is required'),
   email: z.string().email('Invalid email'),
   password: PasswordSchema,
-  displayName: z.string().min(1, 'Display name is required'),
+  displayName: z.string().min(1, 'Display name is required').transform(stripHtml),
   locale: LocaleSchema,
 })
 
@@ -113,7 +118,7 @@ export const LoginSchema = z.object({
 export type LoginInput = z.infer<typeof LoginSchema>
 
 export const UpdateProfileSchema = z.object({
-  displayName: z.string().min(1).optional(),
+  displayName: z.string().min(1).transform(stripHtml).optional(),
   avatar: z.string().optional(),
 })
 
@@ -126,7 +131,7 @@ export const UpdateUserAdminSchema = z.object({
 
 export type UpdateUserAdminInput = z.infer<typeof UpdateUserAdminSchema>
 
-// ── RefreshToken ────────────────────────────────────────
+// ?�?� RefreshToken ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export const RefreshTokenSchema = z.object({
   id: z.string(),
@@ -139,7 +144,7 @@ export const RefreshTokenSchema = z.object({
 
 export type RefreshToken = z.infer<typeof RefreshTokenSchema>
 
-// ── Verification Token ──────────────────────────────────
+// ?�?� Verification Token ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export const VerificationTokenSchema = z.object({
   id: z.string(),
@@ -168,7 +173,7 @@ export const ResetPasswordSchema = z.object({
 
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>
 
-// ── Public user (no passwordHash) ───────────────────────
+// ?�?� Public user (no passwordHash) ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
 
 export type PublicUser = Omit<AuthUser, 'passwordHash'>
 

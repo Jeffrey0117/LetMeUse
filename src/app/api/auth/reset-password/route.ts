@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
 
     return success({ message: 'Password has been reset successfully.' }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to reset password'
-    return fail(message, 500, origin)
+        return fail('Password reset failed', 500, origin)
   }
 }

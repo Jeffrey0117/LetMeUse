@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
 
     return success({ url: portalUrl }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create portal session'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

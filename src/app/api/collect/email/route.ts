@@ -71,8 +71,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return fail('Invalid request body', 400, origin)
     }
-    const message = error instanceof Error ? error.message : 'Failed to collect email'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 

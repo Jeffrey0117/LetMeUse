@@ -65,7 +65,6 @@ export async function GET(request: NextRequest) {
     // Redirect to login with success message
     return NextResponse.redirect(`${BASE_URL}/login?verified=true`)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Verification failed'
-    return fail(message, 500, origin)
+        return fail('Verification failed', 500, origin)
   }
 }

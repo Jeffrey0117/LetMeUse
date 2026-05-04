@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
 
     return success({ loggedOut: true }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Logout failed'
-    return fail(message, 500, origin)
+        return fail('Logout failed', 500, origin)
   }
 }

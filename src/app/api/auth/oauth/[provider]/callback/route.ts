@@ -213,8 +213,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.redirect(url.toString())
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'OAuth callback failed'
-    return redirectWithError(message)
+    return redirectWithError('Authentication failed')
   }
 }
 

@@ -1,3 +1,4 @@
+import '@/lib/token-cleanup'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 import type { App, AuthUser, RefreshToken } from '@/lib/auth-models'
@@ -84,7 +85,6 @@ export async function POST(request: NextRequest) {
 
     return success({ accessToken, refreshToken: newRefreshTokenJWT }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Token refresh failed'
-    return fail(message, 500, origin)
+        return fail('Token refresh failed', 500, origin)
   }
 }

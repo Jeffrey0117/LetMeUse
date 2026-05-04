@@ -9,8 +9,7 @@ export async function GET() {
     const projects = await getAll<Project>(PROJECTS_FILE)
     return success(projects)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch projects'
-    return fail(message, 500)
+        return fail('Operation failed', 500)
   }
 }
 
@@ -36,7 +35,6 @@ export async function POST(request: NextRequest) {
     await create(PROJECTS_FILE, project)
     return success(project, 201)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create project'
-    return fail(message, 500)
+        return fail('Operation failed', 500)
   }
 }

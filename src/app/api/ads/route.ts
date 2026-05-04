@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
     const ads = await getAll<Ad>(ADS_FILE)
     return success(ads)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch ads'
-    return fail(message, 500)
+        return fail('Operation failed', 500)
   }
 }
 
@@ -74,7 +73,6 @@ export async function POST(request: NextRequest) {
     await create(ADS_FILE, ad)
     return success(ad, 201)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create ad'
-    return fail(message, 500)
+        return fail('Operation failed', 500)
   }
 }

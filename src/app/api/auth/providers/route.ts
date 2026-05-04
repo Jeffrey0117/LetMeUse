@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
 
     return success({ providers }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch providers'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

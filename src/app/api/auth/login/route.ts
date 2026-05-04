@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
       origin
     )
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Login failed'
-    return fail(message, 500, origin)
+    return fail('Login failed', 500, origin)
   }
 }

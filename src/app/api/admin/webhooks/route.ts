@@ -37,8 +37,7 @@ export async function GET(request: NextRequest) {
 
     return paginated(events, { total, page, limit }, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to get webhook events'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }
 
@@ -66,7 +65,6 @@ export async function POST(request: NextRequest) {
 
     return success({ retried: true, eventId }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to retry webhook'
-    return fail(message, 500, origin)
+        return fail('Operation failed', 500, origin)
   }
 }

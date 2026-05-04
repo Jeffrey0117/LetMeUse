@@ -136,7 +136,6 @@ export async function POST(request: NextRequest) {
 
     return success({ user: toPublicUser(updated) }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Avatar upload failed'
-    return fail(message, 500, origin)
+        return fail('Avatar upload failed', 500, origin)
   }
 }

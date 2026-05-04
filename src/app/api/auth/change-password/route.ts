@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
 
     return success({ message: 'Password changed successfully' }, 200, origin)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to change password'
-    return fail(message, 500, origin)
+        return fail('Password change failed', 500, origin)
   }
 }

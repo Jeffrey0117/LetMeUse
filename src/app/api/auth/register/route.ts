@@ -118,7 +118,6 @@ export async function POST(request: NextRequest) {
       origin
     )
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Registration failed'
-    return fail(message, 500, origin)
+        return fail('Registration failed', 500, origin)
   }
 }
