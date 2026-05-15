@@ -19,7 +19,7 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin')
 
-  const rateCheck = checkRateLimit(request, 'login', RATE_LIMITS.login)
+  const rateCheck = await checkRateLimit(request, 'login', RATE_LIMITS.login)
   if (!rateCheck.allowed) {
     return rateLimitResponse(rateCheck.retryAfterSeconds!, origin)
   }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH)
 
     if (!user || !valid) {
-      recordFailure(request, 'login', RATE_LIMITS.login)
+      await recordFailure(request, 'login', RATE_LIMITS.login)
       writeAuditLog({ action: 'user.login_failed', actorId: user?.id ?? 'unknown', actorEmail: user?.email, appId, details: user ? undefined : { email }, ip: request.headers.get('x-forwarded-for') ?? undefined })
       return fail('Invalid credentials', 401, origin)
     }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       return fail('Account is disabled', 403, origin)
     }
 
-    resetFailures(request, 'login')
+    await resetFailures(request, 'login')
 
     const now = new Date().toISOString()
     await update<AuthUser>(USERS_FILE, user.id, { lastLoginAt: now, updatedAt: now } as Partial<AuthUser>)

@@ -34,31 +34,31 @@ describe('rate-limit', () => {
   })
 
   describe('checkRateLimit', () => {
-    it('allows requests within the limit', () => {
+    it('allows requests within the limit', async () => {
       const req = createMockRequest('10.0.0.1')
 
-      const result1 = checkRateLimit(req, testEndpoint, testConfig)
+      const result1 = await checkRateLimit(req, testEndpoint, testConfig)
       expect(result1.allowed).toBe(true)
       expect(result1.remaining).toBe(2)
 
-      const result2 = checkRateLimit(req, testEndpoint, testConfig)
+      const result2 = await checkRateLimit(req, testEndpoint, testConfig)
       expect(result2.allowed).toBe(true)
       expect(result2.remaining).toBe(1)
 
-      const result3 = checkRateLimit(req, testEndpoint, testConfig)
+      const result3 = await checkRateLimit(req, testEndpoint, testConfig)
       expect(result3.allowed).toBe(true)
       expect(result3.remaining).toBe(0)
     })
 
-    it('blocks requests over the limit', () => {
+    it('blocks requests over the limit', async () => {
       const req = createMockRequest('10.0.0.2')
 
       // Exhaust the limit
       for (let i = 0; i < testConfig.maxRequests; i++) {
-        checkRateLimit(req, testEndpoint, testConfig)
+        await checkRateLimit(req, testEndpoint, testConfig)
       }
 
-      const blocked = checkRateLimit(req, testEndpoint, testConfig)
+      const blocked = await checkRateLimit(req, testEndpoint, testConfig)
       expect(blocked.allowed).toBe(false)
       expect(blocked.remaining).toBe(0)
       expect(blocked.retryAfterSeconds).toBeGreaterThan(0)
@@ -66,38 +66,38 @@ describe('rate-limit', () => {
   })
 
   describe('lockout after max failures', () => {
-    it('locks out after reaching maxFailures', () => {
+    it('locks out after reaching maxFailures', async () => {
       const req = createMockRequest('10.0.0.3')
 
       // Record failures up to the limit
       for (let i = 0; i < testConfig.maxFailures!; i++) {
-        recordFailure(req, testEndpoint, testConfig)
+        await recordFailure(req, testEndpoint, testConfig)
       }
 
       // The next rate limit check should be locked
-      const result = checkRateLimit(req, testEndpoint, testConfig)
+      const result = await checkRateLimit(req, testEndpoint, testConfig)
       expect(result.allowed).toBe(false)
       expect(result.retryAfterSeconds).toBeGreaterThan(0)
     })
   })
 
   describe('resetFailures', () => {
-    it('clears the failure count', () => {
+    it('clears the failure count', async () => {
       const req = createMockRequest('10.0.0.4')
 
       // Record some failures but not enough to lock
-      recordFailure(req, testEndpoint, testConfig)
-      recordFailure(req, testEndpoint, testConfig)
+      await recordFailure(req, testEndpoint, testConfig)
+      await recordFailure(req, testEndpoint, testConfig)
 
       // Reset failures
-      resetFailures(req, testEndpoint)
+      await resetFailures(req, testEndpoint)
 
       // Now record maxFailures again — should not lock yet because counter was reset
-      recordFailure(req, testEndpoint, testConfig)
-      recordFailure(req, testEndpoint, testConfig)
+      await recordFailure(req, testEndpoint, testConfig)
+      await recordFailure(req, testEndpoint, testConfig)
 
       // Should still be allowed (only 2 failures after reset, need 3 to lock)
-      const result = checkRateLimit(req, testEndpoint, testConfig)
+      const result = await checkRateLimit(req, testEndpoint, testConfig)
       expect(result.allowed).toBe(true)
     })
   })

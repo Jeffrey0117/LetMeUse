@@ -15,7 +15,7 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin')
 
-  const rateCheck = checkRateLimit(request, 'resetPassword', RATE_LIMITS.resetPassword)
+  const rateCheck = await checkRateLimit(request, 'resetPassword', RATE_LIMITS.resetPassword)
   if (!rateCheck.allowed) {
     return rateLimitResponse(rateCheck.retryAfterSeconds!, origin)
   }

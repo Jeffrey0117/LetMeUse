@@ -1,41 +1,44 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { corsHeaders } from './api-result'
+import { getRedis } from './redis'
 
-// ── In-memory sliding window rate limiter ───────────────
+// ── Key prefix ──────────────────────────────────────────
 
-interface RateLimitEntry {
-  timestamps: number[]
+const PREFIX = 'lmu:rl'
+
+// ── In-memory fallback store ────────────────────────────
+
+interface MemEntry {
+  count: number
+  resetAt: number
   failureCount: number
   lockedUntil: number | null
 }
 
-const store = new Map<string, RateLimitEntry>()
+const memStore = new Map<string, MemEntry>()
 
 // Clean up stale entries every 5 minutes
-const CLEANUP_INTERVAL = 5 * 60 * 1000
-const MAX_WINDOW = 60 * 60 * 1000 // 1 hour max window
-
 setInterval(() => {
   const now = Date.now()
-  for (const [key, entry] of store.entries()) {
-    const filtered = entry.timestamps.filter((ts) => now - ts < MAX_WINDOW)
-    if (filtered.length === 0 && (!entry.lockedUntil || entry.lockedUntil < now)) {
-      store.delete(key)
-    } else {
-      entry.timestamps = filtered
+  for (const [key, entry] of memStore.entries()) {
+    if (entry.resetAt < now && (!entry.lockedUntil || entry.lockedUntil < now)) {
+      memStore.delete(key)
     }
   }
-}, CLEANUP_INTERVAL)
+}, 5 * 60 * 1000)
 
-function getEntry(key: string): RateLimitEntry {
-  let entry = store.get(key)
-  if (!entry) {
-    entry = { timestamps: [], failureCount: 0, lockedUntil: null }
-    store.set(key, entry)
+function getMemEntry(key: string, windowMs: number): MemEntry {
+  const now = Date.now()
+  let entry = memStore.get(key)
+  if (!entry || entry.resetAt < now) {
+    entry = { count: 0, resetAt: now + windowMs, failureCount: entry?.failureCount ?? 0, lockedUntil: entry?.lockedUntil ?? null }
+    memStore.set(key, entry)
   }
   return entry
 }
+
+// ── Client IP extraction ────────────────────────────────
 
 function getClientIp(request: NextRequest): string {
   const trustProxy = process.env.TRUST_PROXY === 'true'
@@ -85,7 +88,7 @@ export const RATE_LIMITS = {
   },
 } as const satisfies Record<string, RateLimitConfig>
 
-// ── Check rate limit ────────────────────────────────────
+// ── Rate limit result ───────────────────────────────────
 
 export interface RateLimitResult {
   allowed: boolean
@@ -93,17 +96,101 @@ export interface RateLimitResult {
   retryAfterSeconds?: number
 }
 
-export function checkRateLimit(
-  request: NextRequest,
-  endpoint: string,
+// ── Redis rate limit ────────────────────────────────────
+
+async function checkRedis(
+  key: string,
   config: RateLimitConfig
-): RateLimitResult {
-  const ip = getClientIp(request)
-  const key = `${endpoint}:${ip}`
-  const entry = getEntry(key)
+): Promise<RateLimitResult | null> {
+  const redis = getRedis()
+  if (!redis) return null
+
+  try {
+    const lockKey = `${PREFIX}:lock:${key}`
+    const reqKey = `${PREFIX}:req:${key}`
+    const windowSec = Math.ceil(config.windowMs / 1000)
+
+    // Check lock first
+    const lockTtl = await redis.pttl(lockKey)
+    if (lockTtl > 0) {
+      return { allowed: false, remaining: 0, retryAfterSeconds: Math.ceil(lockTtl / 1000) }
+    }
+
+    // INCR + conditional PEXPIRE (atomic via pipeline)
+    const pipeline = redis.pipeline()
+    pipeline.incr(reqKey)
+    pipeline.pttl(reqKey)
+    const results = await pipeline.exec()
+
+    if (!results) return null
+
+    const count = results[0]?.[1] as number
+    const ttl = results[1]?.[1] as number
+
+    // Set TTL on first request in window
+    if (count === 1 || ttl < 0) {
+      await redis.pexpire(reqKey, config.windowMs)
+    }
+
+    if (count > config.maxRequests) {
+      const retryAfterSeconds = ttl > 0 ? Math.ceil(ttl / 1000) : windowSec
+      return { allowed: false, remaining: 0, retryAfterSeconds }
+    }
+
+    return { allowed: true, remaining: config.maxRequests - count }
+  } catch {
+    return null // fallback to in-memory
+  }
+}
+
+async function recordRedisFailure(
+  key: string,
+  config: RateLimitConfig
+): Promise<boolean> {
+  const redis = getRedis()
+  if (!redis || !config.maxFailures || !config.lockDurationMs) return false
+
+  try {
+    const failKey = `${PREFIX}:fail:${key}`
+    const lockKey = `${PREFIX}:lock:${key}`
+
+    const count = await redis.incr(failKey)
+
+    // Set TTL on first failure (window = lockDuration so failures expire naturally)
+    if (count === 1) {
+      await redis.pexpire(failKey, config.lockDurationMs)
+    }
+
+    if (count >= config.maxFailures) {
+      await redis.set(lockKey, '1', 'PX', config.lockDurationMs)
+      await redis.del(failKey)
+    }
+
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function resetRedisFailures(key: string): Promise<boolean> {
+  const redis = getRedis()
+  if (!redis) return false
+
+  try {
+    await redis.del(`${PREFIX}:fail:${key}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// ── In-memory fallback ──────────────────────────────────
+
+function checkMemory(key: string, config: RateLimitConfig): RateLimitResult {
+  const entry = getMemEntry(key, config.windowMs)
   const now = Date.now()
 
-  // Check if locked
+  // Check lock
   if (entry.lockedUntil && entry.lockedUntil > now) {
     const retryAfterSeconds = Math.ceil((entry.lockedUntil - now) / 1000)
     return { allowed: false, remaining: 0, retryAfterSeconds }
@@ -115,34 +202,20 @@ export function checkRateLimit(
     entry.failureCount = 0
   }
 
-  // Filter timestamps within window
-  entry.timestamps = entry.timestamps.filter((ts) => now - ts < config.windowMs)
+  entry.count++
 
-  if (entry.timestamps.length >= config.maxRequests) {
-    const oldestInWindow = entry.timestamps[0]
-    const retryAfterSeconds = Math.ceil((oldestInWindow + config.windowMs - now) / 1000)
-    return { allowed: false, remaining: 0, retryAfterSeconds }
+  if (entry.count > config.maxRequests) {
+    const retryAfterSeconds = Math.ceil((entry.resetAt - now) / 1000)
+    return { allowed: false, remaining: 0, retryAfterSeconds: Math.max(retryAfterSeconds, 1) }
   }
 
-  entry.timestamps.push(now)
-  const remaining = config.maxRequests - entry.timestamps.length
-
-  return { allowed: true, remaining }
+  return { allowed: true, remaining: config.maxRequests - entry.count }
 }
 
-// ── Record failure (for login lockout) ──────────────────
-
-export function recordFailure(
-  request: NextRequest,
-  endpoint: string,
-  config: RateLimitConfig
-): void {
+function recordMemoryFailure(key: string, config: RateLimitConfig): void {
   if (!config.maxFailures || !config.lockDurationMs) return
 
-  const ip = getClientIp(request)
-  const key = `${endpoint}:${ip}`
-  const entry = getEntry(key)
-
+  const entry = getMemEntry(key, config.windowMs)
   entry.failureCount++
 
   if (entry.failureCount >= config.maxFailures) {
@@ -151,17 +224,53 @@ export function recordFailure(
   }
 }
 
-// ── Reset failure count on success ──────────────────────
-
-export function resetFailures(
-  request: NextRequest,
-  endpoint: string
-): void {
-  const ip = getClientIp(request)
-  const key = `${endpoint}:${ip}`
-  const entry = store.get(key)
+function resetMemoryFailures(key: string): void {
+  const entry = memStore.get(key)
   if (entry) {
     entry.failureCount = 0
+  }
+}
+
+// ── Public API (Redis first, in-memory fallback) ────────
+
+export async function checkRateLimit(
+  request: NextRequest,
+  endpoint: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  const ip = getClientIp(request)
+  const key = `${endpoint}:${ip}`
+
+  const redisResult = await checkRedis(key, config)
+  if (redisResult) return redisResult
+
+  return checkMemory(key, config)
+}
+
+export async function recordFailure(
+  request: NextRequest,
+  endpoint: string,
+  config: RateLimitConfig
+): Promise<void> {
+  const ip = getClientIp(request)
+  const key = `${endpoint}:${ip}`
+
+  const ok = await recordRedisFailure(key, config)
+  if (!ok) {
+    recordMemoryFailure(key, config)
+  }
+}
+
+export async function resetFailures(
+  request: NextRequest,
+  endpoint: string
+): Promise<void> {
+  const ip = getClientIp(request)
+  const key = `${endpoint}:${ip}`
+
+  const ok = await resetRedisFailures(key)
+  if (!ok) {
+    resetMemoryFailures(key)
   }
 }
 

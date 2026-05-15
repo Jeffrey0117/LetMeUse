@@ -20,7 +20,7 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin')
 
-  const rateCheck = checkRateLimit(request, 'register', RATE_LIMITS.register)
+  const rateCheck = await checkRateLimit(request, 'register', RATE_LIMITS.register)
   if (!rateCheck.allowed) {
     return rateLimitResponse(rateCheck.retryAfterSeconds!, origin)
   }
