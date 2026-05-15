@@ -12,7 +12,9 @@ export interface LetMeUseUser {
   emailVerified?: boolean
 }
 
-export type AuthCallback = (user: LetMeUseUser | null) => void
+export type AuthEvent = 'init' | 'login' | 'logout' | 'refresh_failed'
+
+export type AuthCallback = (user: LetMeUseUser | null, event?: AuthEvent) => void
 
 export type Locale = 'en' | 'zh'
 

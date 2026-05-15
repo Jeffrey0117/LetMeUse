@@ -36,6 +36,9 @@ yarn-error.log*
 
 # data (user data, tokens, secrets)
 /data/*.json
+/data/*.db
+/data/*.db-shm
+/data/*.db-wal
 !/data/.gitkeep
 
 # uploads

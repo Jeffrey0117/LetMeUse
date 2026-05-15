@@ -10,7 +10,7 @@
  *   data-mode      — "modal" (default) or "redirect"
  */
 
-import type { Locale, ThemeMode, SdkMode, AuthCallback } from './types'
+import type { Locale, ThemeMode, SdkMode, AuthCallback, LetMeUseUser } from './types'
 import { createTranslator } from './i18n'
 import { ThemeManager } from './theme'
 import { AuthManager } from './auth'
@@ -105,10 +105,21 @@ const letmeuse = {
     authManager.clearTokens()
     authManager.currentUser = null
     authManager.cancelRefresh()
-    authManager.fireCallbacks()
+    authManager.fireCallbacks('logout')
   },
   getToken() {
     return authManager.getStoredAccessToken()
+  },
+  /**
+   * Returns a promise resolving with the initial user state after SDK init.
+   * Use this instead of polling `ready` or guessing timeouts.
+   *
+   * @example
+   * const user = await window.letmeuse.whenReady()
+   * if (user) { showDashboard() } else { showLogin() }
+   */
+  whenReady(): Promise<LetMeUseUser | null> {
+    return authManager.whenReady()
   },
   onAuthChange(cb: AuthCallback): () => void {
     return authManager.onAuthChange(cb)

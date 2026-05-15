@@ -2,7 +2,7 @@
  * Token storage, refresh scheduling, and auth state management
  */
 
-import type { LetMeUseUser, AuthCallback } from './types'
+import type { LetMeUseUser, AuthCallback, AuthEvent } from './types'
 import type { ApiDeps } from './api'
 import { apiPost, apiGet } from './api'
 
@@ -16,6 +16,8 @@ export class AuthManager {
   private _ready = false
   private readonly callbacks: AuthCallback[] = []
   private refreshTimer: ReturnType<typeof setTimeout> | null = null
+  private _readyResolve!: (user: LetMeUseUser | null) => void
+  private readonly _readyPromise: Promise<LetMeUseUser | null>
 
   /** Available OAuth providers for this app */
   availableProviders: string[] = []
@@ -26,6 +28,9 @@ export class AuthManager {
     const prefix = `lmu_${appId}_`
     this.accessKey = `${prefix}access_token`
     this.refreshKey = `${prefix}refresh_token`
+    this._readyPromise = new Promise(resolve => {
+      this._readyResolve = resolve
+    })
   }
 
   get currentUser(): LetMeUseUser | null {
@@ -38,6 +43,15 @@ export class AuthManager {
 
   get ready(): boolean {
     return this._ready
+  }
+
+  /**
+   * Returns a promise that resolves with the initial user state once the SDK
+   * finishes initialization. Resolves immediately if already ready.
+   * Use this instead of polling `ready` or guessing timeouts.
+   */
+  whenReady(): Promise<LetMeUseUser | null> {
+    return this._readyPromise
   }
 
   // ── Token storage ────────────────────────────────────
@@ -62,10 +76,10 @@ export class AuthManager {
 
   // ── Callbacks ────────────────────────────────────────
 
-  fireCallbacks(): void {
+  fireCallbacks(event: AuthEvent = 'init'): void {
     for (const cb of this.callbacks) {
       try {
-        cb(this._currentUser)
+        cb(this._currentUser, event)
       } catch {
         // ignore callback errors
       }
@@ -76,7 +90,7 @@ export class AuthManager {
     this.callbacks.push(cb)
     if (this._ready) {
       try {
-        cb(this._currentUser)
+        cb(this._currentUser, 'init')
       } catch {
         // ignore
       }
@@ -130,7 +144,7 @@ export class AuthManager {
     } catch {
       this.clearTokens()
       this._currentUser = null
-      this.fireCallbacks()
+      this.fireCallbacks('refresh_failed')
     }
   }
 
@@ -184,7 +198,8 @@ export class AuthManager {
     const token = this.getStoredAccessToken()
     if (!token) {
       this._ready = true
-      this.fireCallbacks()
+      this._readyResolve(null)
+      this.fireCallbacks('init')
       return
     }
 
@@ -215,6 +230,7 @@ export class AuthManager {
     }
 
     this._ready = true
-    this.fireCallbacks()
+    this._readyResolve(this._currentUser)
+    this.fireCallbacks('init')
   }
 }

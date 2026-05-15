@@ -2,6 +2,25 @@ import { readFile, writeFile, mkdir, rename } from 'fs/promises'
 import path from 'path'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
+const DB_TYPE = process.env.DB_TYPE ?? 'json'
+
+// ── SQLite helpers (lazy-loaded) ────────────────────────
+
+let _sqliteDb: import('better-sqlite3').Database | null = null
+
+function getSqlite(): import('better-sqlite3').Database {
+  if (_sqliteDb) return _sqliteDb
+  const { getSqliteDb } = require('./db/sqlite') as { getSqliteDb: () => import('better-sqlite3').Database }
+  _sqliteDb = getSqliteDb()
+  return _sqliteDb
+}
+
+/** Map 'users.json' → 'users' */
+function toTable(filename: string): string {
+  return filename.replace(/\.json$/, '')
+}
+
+// ── JSON file helpers (original) ────────────────────────
 
 const writeQueues = new Map<string, Promise<void>>()
 
@@ -47,6 +66,12 @@ export interface HasId {
 }
 
 export async function getAll<T extends HasId>(filename: string): Promise<T[]> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const rows = db.prepare(`SELECT data FROM "${table}"`).all() as { data: string }[]
+    return rows.map((r) => JSON.parse(r.data) as T)
+  }
   return readJsonFile<T>(filename)
 }
 
@@ -54,6 +79,12 @@ export async function getById<T extends HasId>(
   filename: string,
   id: string
 ): Promise<T | null> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const row = db.prepare(`SELECT data FROM "${table}" WHERE id = ?`).get(id) as { data: string } | undefined
+    return row ? JSON.parse(row.data) as T : null
+  }
   const items = await readJsonFile<T>(filename)
   return items.find((item) => item.id === id) ?? null
 }
@@ -62,6 +93,12 @@ export async function create<T extends HasId>(
   filename: string,
   item: T
 ): Promise<T> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    db.prepare(`INSERT INTO "${table}" (id, data) VALUES (?, ?)`).run(item.id, JSON.stringify(item))
+    return item
+  }
   const items = await readJsonFile<T>(filename)
   const updated = [...items, item]
   await writeJsonFile(filename, updated)
@@ -73,6 +110,16 @@ export async function update<T extends HasId>(
   id: string,
   updates: Partial<T>
 ): Promise<T | null> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const row = db.prepare(`SELECT data FROM "${table}" WHERE id = ?`).get(id) as { data: string } | undefined
+    if (!row) return null
+    const existing = JSON.parse(row.data) as T
+    const merged = { ...existing, ...updates }
+    db.prepare(`UPDATE "${table}" SET data = ? WHERE id = ?`).run(JSON.stringify(merged), id)
+    return merged
+  }
   const items = await readJsonFile<T>(filename)
   const index = items.findIndex((item) => item.id === id)
   if (index === -1) return null
@@ -86,6 +133,12 @@ export async function remove<T extends HasId>(
   filename: string,
   id: string
 ): Promise<boolean> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const result = db.prepare(`DELETE FROM "${table}" WHERE id = ?`).run(id)
+    return result.changes > 0
+  }
   const items = await readJsonFile<T>(filename)
   const filtered = items.filter((item) => item.id !== id)
   if (filtered.length === items.length) return false
@@ -98,6 +151,14 @@ export async function findByField<T extends HasId>(
   field: keyof T,
   value: unknown
 ): Promise<T[]> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const rows = db.prepare(
+      `SELECT data FROM "${table}" WHERE json_extract(data, '$.${String(field)}') = ?`
+    ).all(value) as { data: string }[]
+    return rows.map((r) => JSON.parse(r.data) as T)
+  }
   const items = await readJsonFile<T>(filename)
   return items.filter((item) => item[field] === value)
 }

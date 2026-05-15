@@ -226,7 +226,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
             auth.storeTokens(data.accessToken, data.refreshToken)
             auth.currentUser = data.user
             auth.scheduleRefresh()
-            auth.fireCallbacks()
+            auth.fireCallbacks('login')
             removeHost()
           } else {
             const displayName = formData.get('displayName') as string
@@ -240,7 +240,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
             auth.storeTokens(data.accessToken, data.refreshToken)
             auth.currentUser = data.user
             auth.scheduleRefresh()
-            auth.fireCallbacks()
+            auth.fireCallbacks('login')
             removeHost()
           }
         } catch (err) {

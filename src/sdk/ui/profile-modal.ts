@@ -214,7 +214,7 @@ export function createProfileModal(deps: ProfileModalDeps): void {
           const data = (json as { data?: { user?: LetMeUseUser } }).data
           if (data?.user && auth.currentUser) {
             auth.currentUser = { ...auth.currentUser, avatar: data.user.avatar }
-            auth.fireCallbacks()
+            auth.fireCallbacks('login')
           }
           uploadingAvatar = false
           avatarSuccess = t('profile.avatarUpdated')
@@ -262,7 +262,7 @@ export function createProfileModal(deps: ProfileModalDeps): void {
           await apiPutAuth(apiDeps, '/api/auth/profile', { displayName: val }, token)
           if (auth.currentUser) {
             auth.currentUser = { ...auth.currentUser, displayName: val }
-            auth.fireCallbacks()
+            auth.fireCallbacks('login')
           }
           editingName = false
           nameSaved = true
