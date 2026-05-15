@@ -137,7 +137,7 @@ export const RefreshTokenSchema = z.object({
   id: z.string(),
   userId: z.string(),
   appId: z.string(),
-  token: z.string(),
+  tokenHash: z.string(),
   expiresAt: z.string(),
   createdAt: z.string(),
 })

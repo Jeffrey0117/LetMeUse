@@ -5,6 +5,7 @@ import { getAll, getById, update, create, APPS_FILE, USERS_FILE, REFRESH_TOKENS_
 import { generateRefreshTokenId } from '@/lib/id'
 import { verifyPassword, DUMMY_HASH } from '@/lib/auth/password'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
+import { hashToken } from '@/lib/auth/token-hash'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, recordFailure, resetFailures, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       id: generateRefreshTokenId(),
       userId: user.id,
       appId: app.id,
-      token: refreshTokenJWT,
+      tokenHash: hashToken(refreshTokenJWT),
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: now,
     }

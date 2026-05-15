@@ -4,6 +4,7 @@ import type { App, AuthUser, RefreshToken, OAuthProviderName } from '@/lib/auth-
 import { OAUTH_PROVIDER_NAMES } from '@/lib/auth-models'
 import { generateUserId, generateRefreshTokenId } from '@/lib/id'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
+import { hashToken } from '@/lib/auth/token-hash'
 import { hashPassword } from '@/lib/auth/password'
 import { exchangeCodeForTokens, fetchOAuthUserInfo, parseOAuthState } from '@/lib/auth/oauth'
 import { dispatchWebhook } from '@/lib/webhook'
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       id: generateRefreshTokenId(),
       userId: user.id,
       appId: app.id,
-      token: refreshTokenJWT,
+      tokenHash: hashToken(refreshTokenJWT),
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: now,
     }

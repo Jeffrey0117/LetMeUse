@@ -5,6 +5,7 @@ import { getAll, getById, create, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE, VE
 import { generateUserId, generateRefreshTokenId, generateVerificationTokenId, generateVerificationToken } from '@/lib/id'
 import { hashPassword } from '@/lib/auth/password'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
+import { hashToken } from '@/lib/auth/token-hash'
 import { sendVerificationEmail } from '@/lib/auth/email'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       id: generateRefreshTokenId(),
       userId: user.id,
       appId: app.id,
-      token: refreshTokenJWT,
+      tokenHash: hashToken(refreshTokenJWT),
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: now,
     }

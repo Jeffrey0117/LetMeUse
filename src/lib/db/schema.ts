@@ -102,9 +102,9 @@ const INDEXES: string[] = [
     json_extract(data, '$.refreshTokenId')
   )`,
 
-  // Refresh tokens: lookup by token string (validation)
-  `CREATE INDEX IF NOT EXISTS idx_rt_token ON refresh_tokens(
-    json_extract(data, '$.token')
+  // Refresh tokens: lookup by tokenHash (validation)
+  `CREATE INDEX IF NOT EXISTS idx_rt_token_hash ON refresh_tokens(
+    json_extract(data, '$.tokenHash')
   )`,
   // Refresh tokens: lookup by userId (cleanup)
   `CREATE INDEX IF NOT EXISTS idx_rt_user ON refresh_tokens(

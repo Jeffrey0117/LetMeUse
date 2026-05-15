@@ -2,9 +2,10 @@ import '@/lib/token-cleanup'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 import type { App, AuthUser, RefreshToken } from '@/lib/auth-models'
-import { getAll, getById, create, remove, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
+import { getById, create, remove, findByField, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import { generateRefreshTokenId } from '@/lib/id'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
+import { hashToken } from '@/lib/auth/token-hash'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { removeSessionByRefreshToken, createSession } from '@/lib/session'
@@ -35,8 +36,9 @@ export async function POST(request: NextRequest) {
 
     const { refreshToken: tokenString } = parsed.data
 
-    const tokens = await getAll<RefreshToken>(REFRESH_TOKENS_FILE)
-    const storedToken = tokens.find((t) => t.token === tokenString)
+    const tokenHash = hashToken(tokenString)
+    const matches = await findByField<RefreshToken>(REFRESH_TOKENS_FILE, 'tokenHash', tokenHash)
+    const storedToken = matches[0] ?? null
 
     if (!storedToken) {
       return fail('Invalid refresh token', 401, origin)
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
       id: generateRefreshTokenId(),
       userId: user.id,
       appId: app.id,
-      token: newRefreshTokenJWT,
+      tokenHash: hashToken(newRefreshTokenJWT),
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: now,
     }
