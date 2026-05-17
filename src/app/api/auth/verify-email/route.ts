@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     const verificationToken = matches[0] ?? null
 
     if (!verificationToken) {
-      return fail('Invalid or expired verification token', 400, origin)
+      // Token already used or invalid — redirect gracefully instead of hard error
+      return NextResponse.redirect(`${BASE_URL}/login?verified=already`)
     }
 
     if (new Date(verificationToken.expiresAt) < new Date()) {

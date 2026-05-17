@@ -16,14 +16,15 @@ function LoginForm() {
   const redirect = searchParams.get('redirect') ?? ''
   const initialTab = searchParams.get('tab') === 'register' ? 'register' : 'login'
   const oauthError = searchParams.get('error')
-  const verified = searchParams.get('verified') === 'true'
+  const verifiedParam = searchParams.get('verified')
+  const verified = verifiedParam === 'true' || verifiedParam === 'already'
 
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialTab)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState(oauthError ?? '')
-  const [successMsg, setSuccessMsg] = useState(verified ? 'auth.emailVerified' : '')
+  const [successMsg, setSuccessMsg] = useState(verified ? (verifiedParam === 'already' ? 'auth.emailAlreadyVerified' : 'auth.emailVerified') : '')
   const [loading, setLoading] = useState(false)
   const [providers, setProviders] = useState<string[]>([])
 
