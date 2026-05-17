@@ -151,7 +151,7 @@ export const VerificationTokenSchema = z.object({
   userId: z.string(),
   appId: z.string(),
   type: z.enum(['email_verification', 'password_reset']),
-  token: z.string(),
+  tokenHash: z.string(),
   expiresAt: z.string(),
   createdAt: z.string(),
 })

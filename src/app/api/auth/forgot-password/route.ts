@@ -1,7 +1,8 @@
 import { type NextRequest } from 'next/server'
 import { ForgotPasswordSchema, type AuthUser, type App, type VerificationToken } from '@/lib/auth-models'
-import { getAll, getById, create, APPS_FILE, USERS_FILE, VERIFICATION_TOKENS_FILE } from '@/lib/storage'
+import { findUserByAppAndEmail, getById, create, APPS_FILE, USERS_FILE, VERIFICATION_TOKENS_FILE } from '@/lib/storage'
 import { generateVerificationTokenId, generateVerificationToken } from '@/lib/id'
+import { hashToken } from '@/lib/auth/token-hash'
 import { sendPasswordResetEmail } from '@/lib/auth/email'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
@@ -35,10 +36,7 @@ export async function POST(request: NextRequest) {
       return success({ message: 'If the email exists, a reset link has been sent.' }, 200, origin)
     }
 
-    const users = await getAll<AuthUser>(USERS_FILE)
-    const user = users.find(
-      (u) => u.appId === appId && u.email.toLowerCase() === email.toLowerCase()
-    )
+    const user = await findUserByAppAndEmail<AuthUser>(USERS_FILE, appId, email)
 
     if (!user) {
       // Don't reveal if user exists
@@ -54,7 +52,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       appId: app.id,
       type: 'password_reset',
-      token,
+      tokenHash: hashToken(token),
       expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       createdAt: now,
     }

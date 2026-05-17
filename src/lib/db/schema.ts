@@ -111,9 +111,19 @@ const INDEXES: string[] = [
     json_extract(data, '$.userId')
   )`,
 
-  // Verification tokens: lookup by token string
-  `CREATE INDEX IF NOT EXISTS idx_vt_token ON verification_tokens(
-    json_extract(data, '$.token')
+  // Verification tokens: lookup by (type, tokenHash) for combined lookup
+  `CREATE INDEX IF NOT EXISTS idx_vt_type_hash ON verification_tokens(
+    json_extract(data, '$.type'),
+    json_extract(data, '$.tokenHash')
+  )`,
+  // Verification tokens: expiresAt for cleanup
+  `CREATE INDEX IF NOT EXISTS idx_vt_expires ON verification_tokens(
+    json_extract(data, '$.expiresAt')
+  )`,
+
+  // Refresh tokens: expiresAt for cleanup
+  `CREATE INDEX IF NOT EXISTS idx_rt_expires ON refresh_tokens(
+    json_extract(data, '$.expiresAt')
   )`,
 
   // Audit log: filter by appId + time range
@@ -124,6 +134,10 @@ const INDEXES: string[] = [
   // Audit log: filter by action
   `CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(
     json_extract(data, '$.action')
+  )`,
+  // Audit log: filter by actorId
+  `CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_log(
+    json_extract(data, '$.actorId')
   )`,
 
   // Roles: lookup by appId

@@ -9,6 +9,7 @@ export interface AccessTokenPayload {
   role: string
   permissions: string[]
   app: string
+  emailVerified: boolean
   iat: number
   exp: number
 }
@@ -29,6 +30,7 @@ export async function signAccessToken(
     role: user.role,
     permissions,
     app: app.id,
+    emailVerified: !!user.emailVerified,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)

@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { LoginSchema, type AuthUser, type RefreshToken, toPublicUser } from '@/lib/auth-models'
 import type { App } from '@/lib/auth-models'
-import { getAll, getById, update, create, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
+import { findUserByAppAndEmail, getById, update, create, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import { generateRefreshTokenId } from '@/lib/id'
 import { verifyPassword, DUMMY_HASH } from '@/lib/auth/password'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
@@ -40,10 +40,7 @@ export async function POST(request: NextRequest) {
       return fail('Invalid credentials', 401, origin)
     }
 
-    const users = await getAll<AuthUser>(USERS_FILE)
-    const user = users.find(
-      (u) => u.appId === appId && u.email.toLowerCase() === email.toLowerCase()
-    )
+    const user = await findUserByAppAndEmail<AuthUser>(USERS_FILE, appId, email)
 
     // Always run bcrypt to prevent timing-based user enumeration
     const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH)
@@ -93,7 +90,7 @@ export async function POST(request: NextRequest) {
     writeAuditLog({ action: 'user.login', actorId: user.id, actorEmail: user.email, appId: app.id, ip: request.headers.get('x-forwarded-for') ?? undefined })
 
     return success(
-      { user: toPublicUser({ ...user, lastLoginAt: now }), accessToken, refreshToken: refreshTokenJWT },
+      { user: toPublicUser({ ...user, lastLoginAt: now, updatedAt: now }), accessToken, refreshToken: refreshTokenJWT },
       200,
       origin
     )

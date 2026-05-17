@@ -71,8 +71,8 @@ export const RATE_LIMITS = {
     lockDurationMs: 15 * 60 * 1000, // 15 minutes lock
   },
   register: {
-    windowMs: 60 * 60 * 1000,     // 1 hour window
-    maxRequests: 5,
+    windowMs: 24 * 60 * 60 * 1000, // 24 hour window
+    maxRequests: 3,                 // max 3 accounts per IP per day
   },
   refresh: {
     windowMs: 60 * 1000,          // 1 minute window

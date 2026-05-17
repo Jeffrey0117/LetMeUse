@@ -2,8 +2,8 @@ import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth/middleware'
 import { corsResponse, success, fail } from '@/lib/api-result'
-import { getUserSessions, revokeSession, revokeAllUserSessions } from '@/lib/session'
-import { getAll, remove, REFRESH_TOKENS_FILE } from '@/lib/storage'
+import { getUserSessions, revokeSession } from '@/lib/session'
+import { remove, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import type { RefreshToken } from '@/lib/auth-models'
 
 export async function OPTIONS(request: NextRequest) {
@@ -57,11 +57,7 @@ export async function DELETE(request: NextRequest) {
       let revoked = 0
       for (const session of sessions) {
         // Also remove associated refresh tokens
-        const tokens = await getAll<RefreshToken>(REFRESH_TOKENS_FILE)
-        const rt = tokens.find((t) => t.id === session.refreshTokenId)
-        if (rt) {
-          await remove<RefreshToken>(REFRESH_TOKENS_FILE, rt.id)
-        }
+        await remove<RefreshToken>(REFRESH_TOKENS_FILE, session.refreshTokenId)
         await revokeSession(session.id)
         revoked++
       }
@@ -80,11 +76,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove the refresh token too
-    const tokens = await getAll<RefreshToken>(REFRESH_TOKENS_FILE)
-    const rt = tokens.find((t) => t.id === target.refreshTokenId)
-    if (rt) {
-      await remove<RefreshToken>(REFRESH_TOKENS_FILE, rt.id)
-    }
+    await remove<RefreshToken>(REFRESH_TOKENS_FILE, target.refreshTokenId)
 
     await revokeSession(sessionId)
 

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { getAll, getById, update, remove, USERS_FILE, VERIFICATION_TOKENS_FILE, APPS_FILE } from '@/lib/storage'
+import { findByFields, getById, update, remove, USERS_FILE, VERIFICATION_TOKENS_FILE, APPS_FILE } from '@/lib/storage'
 import type { AuthUser, App, VerificationToken } from '@/lib/auth-models'
+import { hashToken } from '@/lib/auth/token-hash'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { dispatchWebhook } from '@/lib/webhook'
 import { writeAuditLog } from '@/lib/audit'
@@ -22,10 +23,11 @@ export async function GET(request: NextRequest) {
       return fail('Missing token parameter', 400, origin)
     }
 
-    const tokens = await getAll<VerificationToken>(VERIFICATION_TOKENS_FILE)
-    const verificationToken = tokens.find(
-      (t) => t.token === token && t.type === 'email_verification'
-    )
+    const matches = await findByFields<VerificationToken>(VERIFICATION_TOKENS_FILE, {
+      tokenHash: hashToken(token),
+      type: 'email_verification',
+    })
+    const verificationToken = matches[0] ?? null
 
     if (!verificationToken) {
       return fail('Invalid or expired verification token', 400, origin)

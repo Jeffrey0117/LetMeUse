@@ -1,4 +1,4 @@
-import { create, getAll, AUDIT_LOG_FILE } from './storage'
+import { create, getAll, getSqlite, DB_TYPE, AUDIT_LOG_FILE } from './storage'
 import { generateAuditLogId } from './id'
 
 // ── Audit event types ───────────────────────────────────
@@ -65,26 +65,81 @@ export async function queryAuditLog(options?: {
   limit?: number
   offset?: number
 }): Promise<{ entries: AuditLogEntry[]; total: number }> {
+  const limit = options?.limit ?? 50
+  const offset = options?.offset ?? 0
+
+  if (DB_TYPE === 'sqlite') {
+    return queryAuditLogSql(options?.appId, options?.actorId, options?.action, limit, offset)
+  }
+
+  return queryAuditLogJson(options?.appId, options?.actorId, options?.action, limit, offset)
+}
+
+function queryAuditLogSql(
+  appId?: string,
+  actorId?: string,
+  action?: string,
+  limit = 50,
+  offset = 0
+): { entries: AuditLogEntry[]; total: number } {
+  const db = getSqlite()
+  const whereClauses: string[] = []
+  const params: unknown[] = []
+
+  if (appId) {
+    whereClauses.push("json_extract(data, '$.appId') = ?")
+    params.push(appId)
+  }
+  if (actorId) {
+    whereClauses.push("json_extract(data, '$.actorId') = ?")
+    params.push(actorId)
+  }
+  if (action) {
+    whereClauses.push("json_extract(data, '$.action') = ?")
+    params.push(action)
+  }
+
+  const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : ''
+
+  const countRow = db.prepare(
+    `SELECT COUNT(*) as cnt FROM audit_log ${whereStr}`
+  ).get(...params) as { cnt: number }
+
+  const rows = db.prepare(
+    `SELECT data FROM audit_log ${whereStr} ORDER BY json_extract(data, '$.createdAt') DESC LIMIT ? OFFSET ?`
+  ).all(...params, limit, offset) as { data: string }[]
+
+  return {
+    entries: rows.map((r) => JSON.parse(r.data) as AuditLogEntry),
+    total: countRow.cnt,
+  }
+}
+
+async function queryAuditLogJson(
+  appId?: string,
+  actorId?: string,
+  action?: string,
+  limit = 50,
+  offset = 0
+): Promise<{ entries: AuditLogEntry[]; total: number }> {
   const all = await getAll<AuditLogEntry>(AUDIT_LOG_FILE)
   let filtered = all
 
-  if (options?.appId) {
-    filtered = filtered.filter((e) => e.appId === options.appId)
+  if (appId) {
+    filtered = filtered.filter((e) => e.appId === appId)
   }
-  if (options?.actorId) {
-    filtered = filtered.filter((e) => e.actorId === options.actorId)
+  if (actorId) {
+    filtered = filtered.filter((e) => e.actorId === actorId)
   }
-  if (options?.action) {
-    filtered = filtered.filter((e) => e.action === options.action)
+  if (action) {
+    filtered = filtered.filter((e) => e.action === action)
   }
 
-  // Sort newest first
-  filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  // Sort newest first (immutable)
+  const sorted = [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  const total = filtered.length
-  const offset = options?.offset ?? 0
-  const limit = options?.limit ?? 50
-  const entries = filtered.slice(offset, offset + limit)
+  const total = sorted.length
+  const entries = sorted.slice(offset, offset + limit)
 
   return { entries, total }
 }

@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import type { RefreshToken } from '@/lib/auth-models'
-import { getAll, remove, REFRESH_TOKENS_FILE } from '@/lib/storage'
+import { removeWhere, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import { authenticateRequest } from '@/lib/auth/middleware'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { revokeAllUserSessions } from '@/lib/session'
@@ -19,12 +19,7 @@ export async function POST(request: NextRequest) {
       return authResult
     }
 
-    const tokens = await getAll<RefreshToken>(REFRESH_TOKENS_FILE)
-    const userTokens = tokens.filter((t) => t.userId === authResult.payload.sub)
-
-    for (const token of userTokens) {
-      await remove<RefreshToken>(REFRESH_TOKENS_FILE, token.id)
-    }
+    await removeWhere<RefreshToken>(REFRESH_TOKENS_FILE, 'userId', authResult.payload.sub)
 
     await revokeAllUserSessions(authResult.payload.sub)
 

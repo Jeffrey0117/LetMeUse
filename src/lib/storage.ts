@@ -2,22 +2,30 @@ import { readFile, writeFile, mkdir, rename } from 'fs/promises'
 import path from 'path'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
-const DB_TYPE = process.env.DB_TYPE ?? 'json'
+export const DB_TYPE = process.env.DB_TYPE ?? 'json'
 
 // ── SQLite helpers (lazy-loaded) ────────────────────────
 
 let _sqliteDb: import('better-sqlite3').Database | null = null
 
-function getSqlite(): import('better-sqlite3').Database {
+export function getSqlite(): import('better-sqlite3').Database {
   if (_sqliteDb) return _sqliteDb
   const { getSqliteDb } = require('./db/sqlite') as { getSqliteDb: () => import('better-sqlite3').Database }
   _sqliteDb = getSqliteDb()
   return _sqliteDb
 }
 
-/** Map 'users.json' → 'users' */
+/** Validate identifier (field/table name) to prevent SQL injection. */
+function safeIdent(name: string): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`Invalid identifier: ${name}`)
+  }
+  return name
+}
+
+/** Map 'users.json' → 'users' (validated). */
 function toTable(filename: string): string {
-  return filename.replace(/\.json$/, '')
+  return safeIdent(filename.replace(/\.json$/, ''))
 }
 
 // ── JSON file helpers (original) ────────────────────────
@@ -154,13 +162,118 @@ export async function findByField<T extends HasId>(
   if (DB_TYPE === 'sqlite') {
     const db = getSqlite()
     const table = toTable(filename)
+    const safeField = safeIdent(String(field))
     const rows = db.prepare(
-      `SELECT data FROM "${table}" WHERE json_extract(data, '$.${String(field)}') = ?`
+      `SELECT data FROM "${table}" WHERE json_extract(data, '$.${safeField}') = ?`
     ).all(value) as { data: string }[]
     return rows.map((r) => JSON.parse(r.data) as T)
   }
   const items = await readJsonFile<T>(filename)
   return items.filter((item) => item[field] === value)
+}
+
+export async function findByFields<T extends HasId>(
+  filename: string,
+  fields: Partial<Record<keyof T, unknown>>
+): Promise<T[]> {
+  const entries = Object.entries(fields) as [string, unknown][]
+  if (entries.length === 0) return []
+
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const clauses = entries.map(([k]) => `json_extract(data, '$.${safeIdent(k)}') = ?`)
+    const values = entries.map(([, v]) => v)
+    const rows = db.prepare(
+      `SELECT data FROM "${table}" WHERE ${clauses.join(' AND ')}`
+    ).all(...values) as { data: string }[]
+    return rows.map((r) => JSON.parse(r.data) as T)
+  }
+
+  const items = await readJsonFile<T>(filename)
+  return items.filter((item) =>
+    entries.every(([k, v]) => item[k as keyof T] === v)
+  )
+}
+
+/** Case-insensitive user lookup by appId + email. Uses LOWER() in SQLite. */
+export async function findUserByAppAndEmail<T extends HasId>(
+  filename: string,
+  appId: string,
+  email: string
+): Promise<T | null> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const row = db.prepare(
+      `SELECT data FROM "${table}" WHERE json_extract(data, '$.appId') = ? AND LOWER(json_extract(data, '$.email')) = LOWER(?)`
+    ).get(appId, email) as { data: string } | undefined
+    return row ? JSON.parse(row.data) as T : null
+  }
+
+  const items = await readJsonFile<T>(filename)
+  const lowerEmail = email.toLowerCase()
+  return items.find(
+    (item) => (item as Record<string, unknown>)['appId'] === appId &&
+      String((item as Record<string, unknown>)['email']).toLowerCase() === lowerEmail
+  ) ?? null
+}
+
+export async function removeWhere<T extends HasId>(
+  filename: string,
+  field: keyof T,
+  value: unknown,
+  excludeId?: string
+): Promise<number> {
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const safeField = safeIdent(String(field))
+    if (excludeId) {
+      const result = db.prepare(
+        `DELETE FROM "${table}" WHERE json_extract(data, '$.${safeField}') = ? AND id != ?`
+      ).run(value, excludeId)
+      return result.changes
+    }
+    const result = db.prepare(
+      `DELETE FROM "${table}" WHERE json_extract(data, '$.${safeField}') = ?`
+    ).run(value)
+    return result.changes
+  }
+
+  const items = await readJsonFile<T>(filename)
+  const remaining = items.filter((item) => {
+    if (item[field] !== value) return true
+    if (excludeId && item.id === excludeId) return true
+    return false
+  })
+  const removed = items.length - remaining.length
+  if (removed > 0) await writeJsonFile(filename, remaining)
+  return removed
+}
+
+export async function removeExpired<T extends HasId>(
+  filename: string,
+  dateField: keyof T
+): Promise<number> {
+  const now = new Date().toISOString()
+  if (DB_TYPE === 'sqlite') {
+    const db = getSqlite()
+    const table = toTable(filename)
+    const safeDateField = safeIdent(String(dateField))
+    const result = db.prepare(
+      `DELETE FROM "${table}" WHERE json_extract(data, '$.${safeDateField}') <= ?`
+    ).run(now)
+    return result.changes
+  }
+
+  const items = await readJsonFile<T>(filename)
+  const remaining = items.filter(
+    (item) => String(item[dateField]) > now
+  )
+  const removed = items.length - remaining.length
+  if (removed > 0) await writeJsonFile(filename, remaining)
+  return removed
 }
 
 // ── File constants ───────────────────────────────────────

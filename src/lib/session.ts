@@ -1,4 +1,4 @@
-import { getAll, create, remove, SESSIONS_FILE, REFRESH_TOKENS_FILE } from './storage'
+import { findByField, create, remove, removeWhere, SESSIONS_FILE, REFRESH_TOKENS_FILE } from './storage'
 import type { RefreshToken } from './auth-models'
 import { generateSessionId } from './id'
 
@@ -58,11 +58,8 @@ export async function createSession(params: {
 // ── Get user sessions ───────────────────────────────────
 
 export async function getUserSessions(userId: string, appId?: string): Promise<Session[]> {
-  const all = await getAll<Session>(SESSIONS_FILE)
-  let filtered = all.filter((s) => s.userId === userId)
-  if (appId) {
-    filtered = filtered.filter((s) => s.appId === appId)
-  }
+  const sessions = await findByField<Session>(SESSIONS_FILE, 'userId', userId)
+  const filtered = appId ? sessions.filter((s) => s.appId === appId) : sessions
   return filtered.sort((a, b) => new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime())
 }
 
@@ -75,35 +72,20 @@ export async function revokeSession(sessionId: string): Promise<boolean> {
 // ── Revoke all sessions for user ────────────────────────
 
 export async function revokeAllUserSessions(userId: string, excludeSessionId?: string): Promise<number> {
-  const sessions = await getUserSessions(userId)
-  let count = 0
-  for (const session of sessions) {
-    if (excludeSessionId && session.id === excludeSessionId) continue
-    await remove<Session>(SESSIONS_FILE, session.id)
-    count++
-  }
-  return count
+  return removeWhere<Session>(SESSIONS_FILE, 'userId', userId, excludeSessionId)
 }
 
 // ── Revoke all refresh tokens for user ──────────────────
 
 export async function revokeAllUserRefreshTokens(userId: string): Promise<number> {
-  const allTokens = await getAll<RefreshToken>(REFRESH_TOKENS_FILE)
-  const userTokens = allTokens.filter((t) => t.userId === userId)
-  let count = 0
-  for (const token of userTokens) {
-    await remove<RefreshToken>(REFRESH_TOKENS_FILE, token.id)
-    count++
-  }
-  return count
+  return removeWhere<RefreshToken>(REFRESH_TOKENS_FILE, 'userId', userId)
 }
 
 // ── Remove session by refresh token ─────────────────────
 
 export async function removeSessionByRefreshToken(refreshTokenId: string): Promise<void> {
-  const all = await getAll<Session>(SESSIONS_FILE)
-  const session = all.find((s) => s.refreshTokenId === refreshTokenId)
-  if (session) {
-    await remove<Session>(SESSIONS_FILE, session.id)
+  const sessions = await findByField<Session>(SESSIONS_FILE, 'refreshTokenId', refreshTokenId)
+  if (sessions.length > 0) {
+    await remove<Session>(SESSIONS_FILE, sessions[0].id)
   }
 }

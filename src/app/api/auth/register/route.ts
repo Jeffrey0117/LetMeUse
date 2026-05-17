@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { RegisterSchema, type AuthUser, type RefreshToken, type VerificationToken, toPublicUser } from '@/lib/auth-models'
 import type { App } from '@/lib/auth-models'
-import { getAll, getById, create, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE, VERIFICATION_TOKENS_FILE } from '@/lib/storage'
+import { findUserByAppAndEmail, getById, create, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE, VERIFICATION_TOKENS_FILE } from '@/lib/storage'
 import { generateUserId, generateRefreshTokenId, generateVerificationTokenId, generateVerificationToken } from '@/lib/id'
 import { hashPassword } from '@/lib/auth/password'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
@@ -41,10 +41,7 @@ export async function POST(request: NextRequest) {
       return fail('App not found', 404, origin)
     }
 
-    const existingUsers = await getAll<AuthUser>(USERS_FILE)
-    const duplicate = existingUsers.find(
-      (u) => u.appId === appId && u.email.toLowerCase() === email.toLowerCase()
-    )
+    const duplicate = await findUserByAppAndEmail<AuthUser>(USERS_FILE, appId, email)
     if (duplicate) {
       return fail('Email already registered', 409, origin)
     }
@@ -75,7 +72,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         appId: app.id,
         type: 'email_verification',
-        token: vToken,
+        tokenHash: hashToken(vToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         createdAt: now,
       }

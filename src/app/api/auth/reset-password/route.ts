@@ -1,7 +1,8 @@
 import { type NextRequest } from 'next/server'
 import { ResetPasswordSchema, type AuthUser, type App, type VerificationToken } from '@/lib/auth-models'
-import { getAll, getById, update, remove, USERS_FILE, VERIFICATION_TOKENS_FILE, APPS_FILE } from '@/lib/storage'
+import { findByFields, getById, update, remove, USERS_FILE, VERIFICATION_TOKENS_FILE, APPS_FILE } from '@/lib/storage'
 import { hashPassword } from '@/lib/auth/password'
+import { hashToken } from '@/lib/auth/token-hash'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
@@ -31,10 +32,11 @@ export async function POST(request: NextRequest) {
 
     const { token, password } = parsed.data
 
-    const tokens = await getAll<VerificationToken>(VERIFICATION_TOKENS_FILE)
-    const resetToken = tokens.find(
-      (t) => t.token === token && t.type === 'password_reset'
-    )
+    const matches = await findByFields<VerificationToken>(VERIFICATION_TOKENS_FILE, {
+      tokenHash: hashToken(token),
+      type: 'password_reset',
+    })
+    const resetToken = matches[0] ?? null
 
     if (!resetToken) {
       return fail('Invalid or expired reset token', 400, origin)
