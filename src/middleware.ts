@@ -52,8 +52,14 @@ export function middleware(request: NextRequest) {
 
   const isPublic = isPublicCorsPath(pathname)
 
+  // ── Service token bypass (server-to-server calls skip CSRF + origin) ──
+  const serviceToken = process.env.LETMEUSE_SERVICE_TOKEN
+  const authHeader = request.headers.get('authorization')
+  const isServiceCall = serviceToken
+    && authHeader === `Bearer ${serviceToken}`
+
   // ── CSRF double-submit cookie (admin/non-public endpoints) ──
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && !isPublic) {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && !isPublic && !isServiceCall) {
     const csrfCookie = request.cookies.get('lmu_csrf')?.value
     const csrfHeader = request.headers.get('x-csrf-token')
 
@@ -83,7 +89,7 @@ export function middleware(request: NextRequest) {
 
   // ── State-changing requests: validate Origin ────────────
   const isStateMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
-  if (isStateMutating && origin && !isPublic && !isAllowedOrigin(origin)) {
+  if (isStateMutating && origin && !isPublic && !isServiceCall && !isAllowedOrigin(origin)) {
     return NextResponse.json(
       { success: false, error: 'Forbidden origin' },
       { status: 403 }

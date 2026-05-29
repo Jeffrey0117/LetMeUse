@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyAccessToken, type AccessTokenPayload } from './jwt'
-import { getById } from '../storage'
+import { getById, getAll } from '../storage'
 import { APPS_FILE } from '../storage'
 import type { App } from '../auth-models'
 import { corsHeaders, fail } from '../api-result'
@@ -21,6 +21,27 @@ export async function authenticateRequest(
   }
 
   const token = authHeader.slice(7)
+
+  // ── Service token bypass (server-to-server admin access) ──
+  const serviceToken = process.env.LETMEUSE_SERVICE_TOKEN
+  if (serviceToken && token === serviceToken) {
+    const apps = await getAll<App>(APPS_FILE)
+    const systemApp = apps[0] ?? { id: 'system', secret: '', name: 'System', domains: [], createdAt: '', updatedAt: '' }
+    return {
+      payload: {
+        sub: 'service',
+        email: 'service@system',
+        name: 'Service',
+        role: 'admin',
+        permissions: ['admin:read', 'admin:write', 'admin:delete'],
+        app: systemApp.id,
+        emailVerified: true,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      app: systemApp as App,
+    }
+  }
 
   const parts = token.split('.')
   if (parts.length !== 3) {
