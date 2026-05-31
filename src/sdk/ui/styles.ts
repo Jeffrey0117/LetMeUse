@@ -74,6 +74,29 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       color: var(--lmu-subtext);
       letter-spacing: 0.2px;
     }
+    .lmu-req {
+      color: #ef4444;
+      font-weight: 600;
+    }
+    .lmu-label-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 8px 0;
+    }
+    .lmu-label-row .lmu-label {
+      margin: 0;
+    }
+    .lmu-label-link {
+      font-size: 12px;
+      color: ${accent};
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .lmu-label-link:hover { text-decoration: underline; }
     .lmu-input {
       -webkit-appearance: none;
       -moz-appearance: none;

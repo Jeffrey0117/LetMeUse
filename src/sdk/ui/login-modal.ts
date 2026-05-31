@@ -130,19 +130,21 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
           <form id="lmu-auth-form">
             ${!isLogin ? `
               <div class="lmu-field">
-                <label class="lmu-label">${t('label.displayName')}</label>
-                <input class="lmu-input" type="text" name="displayName" required />
+                <label class="lmu-label">${t('label.displayName')} <span class="lmu-req">*</span></label>
+                <input class="lmu-input" type="text" name="displayName" placeholder="${t('placeholder.displayName')}" required />
               </div>
             ` : ''}
             <div class="lmu-field">
-              <label class="lmu-label">${t('label.email')}</label>
-              <input class="lmu-input" type="email" name="email" required />
+              <label class="lmu-label">${t('label.email')} <span class="lmu-req">*</span></label>
+              <input class="lmu-input" type="email" name="email" placeholder="${t('placeholder.email')}" required />
             </div>
             <div class="lmu-field">
-              <label class="lmu-label">${t('label.password')}</label>
-              <input class="lmu-input" type="password" name="password" id="lmu-password-input" required minlength="${isLogin ? 1 : 8}" />
+              <div class="lmu-label-row">
+                <label class="lmu-label">${t('label.password')} <span class="lmu-req">*</span></label>
+                ${isLogin ? `<a id="lmu-forgot-pw" class="lmu-label-link">${t('link.forgotPassword')}</a>` : ''}
+              </div>
+              <input class="lmu-input" type="password" name="password" id="lmu-password-input" placeholder="${isLogin ? t('placeholder.password') : t('placeholder.passwordNew')}" required minlength="${isLogin ? 1 : 8}" />
             </div>
-            ${isLogin ? `<div style="text-align:right;margin:-10px 0 8px 0;"><a id="lmu-forgot-pw" style="font-size:12px;color:${accent};cursor:pointer;text-decoration:none;">${t('link.forgotPassword')}</a></div>` : ''}
             <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
               ${loading ? t('msg.loading') : (isLogin ? t('btn.login') : t('btn.register'))}
             </button>
