@@ -175,7 +175,8 @@
       color: ${e};
       cursor: pointer;
       text-decoration: none;
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 14.5px;
     }
     .lmu-switch a:hover { text-decoration: underline; }
     .lmu-error {
