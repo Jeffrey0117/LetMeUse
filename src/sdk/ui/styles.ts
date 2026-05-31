@@ -162,6 +162,10 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       font-size: 13px;
       color: var(--lmu-subtext);
     }
+    .lmu-switch-text {
+      color: var(--lmu-subtext);
+      margin-right: 5px;
+    }
     .lmu-switch a {
       color: ${accent};
       cursor: pointer;

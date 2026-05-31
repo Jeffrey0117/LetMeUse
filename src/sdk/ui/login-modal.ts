@@ -168,9 +168,8 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
             </div>
           ` : ''}
           <div class="lmu-switch">
-            <a id="lmu-switch-mode">
-              ${isLogin ? t('switch.toRegister') : t('switch.toLogin')}
-            </a>
+            <span class="lmu-switch-text">${isLogin ? t('switch.toRegisterPrompt') : t('switch.toLoginPrompt')}</span>
+            <a id="lmu-switch-mode">${isLogin ? t('switch.toRegisterAction') : t('switch.toLoginAction')}</a>
           </div>
         </div>
       `
