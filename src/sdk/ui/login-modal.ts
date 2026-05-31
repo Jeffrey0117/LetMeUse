@@ -145,6 +145,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
               </div>
               <input class="lmu-input" type="password" name="password" id="lmu-password-input" placeholder="${isLogin ? t('placeholder.password') : t('placeholder.passwordNew')}" required minlength="${isLogin ? 1 : 8}" />
             </div>
+            ${!isLogin ? `<p class="lmu-terms">${t('register.terms')}</p>` : ''}
             <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
               ${loading ? t('msg.loading') : (isLogin ? t('btn.login') : t('btn.register'))}
             </button>
