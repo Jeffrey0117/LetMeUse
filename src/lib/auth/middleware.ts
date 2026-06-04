@@ -69,6 +69,18 @@ export async function authenticateRequest(
   }
 }
 
+/**
+ * 平台管理員白名單 — env `PLATFORM_ADMIN_EMAILS` (逗號分隔)。
+ * 修掉「任一 app 的 role:admin = 全域 admin」這個致命授權洞:
+ * 全域 admin 端點 (/api/admin/*) 只認這些 email, 不是隨便哪個 app 的 admin。
+ */
+function platformAdminEmails(): string[] {
+  return (process.env.PLATFORM_ADMIN_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+}
+
 export async function requireAdmin(
   request: NextRequest
 ): Promise<{ payload: AccessTokenPayload; app: App } | NextResponse> {
@@ -78,8 +90,28 @@ export async function requireAdmin(
     return result
   }
 
+  const origin = request.headers.get('origin')
+
   if (result.payload.role !== 'admin') {
-    const origin = request.headers.get('origin')
+    return fail('Admin access required', 403, origin)
+  }
+
+  // service token (server-to-server, 需 LETMEUSE_SERVICE_TOKEN) 直接放行
+  if (result.payload.sub === 'service') {
+    return result
+  }
+
+  // 🔒 平台管理員白名單檢查 — 沒設 env = fail-closed (拒絕, 不留洞)
+  const allow = platformAdminEmails()
+  if (allow.length === 0) {
+    console.error(
+      '[SECURITY] PLATFORM_ADMIN_EMAILS 未設定 → 拒絕所有 admin 後台存取。' +
+        '請在環境變數設平台管理員 email (逗號分隔) 才能進 /api/admin/*。'
+    )
+    return fail('Admin not configured', 403, origin)
+  }
+  const email = (result.payload.email || '').toLowerCase()
+  if (!allow.includes(email)) {
     return fail('Admin access required', 403, origin)
   }
 
