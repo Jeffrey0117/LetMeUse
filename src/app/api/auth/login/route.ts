@@ -55,6 +55,11 @@ export async function POST(request: NextRequest) {
       return fail('Account is disabled', 403, origin)
     }
 
+    // 🔒 只對「有開啟 requireEmailVerification」的 app 強制 — 不影響其他 app 既有用戶
+    if (app.requireEmailVerification && !user.emailVerified) {
+      return fail('Email not verified — 請先驗證信箱再登入', 403, origin)
+    }
+
     await resetFailures(request, 'login')
 
     const now = new Date().toISOString()

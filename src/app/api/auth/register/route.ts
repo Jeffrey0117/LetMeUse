@@ -78,6 +78,10 @@ export async function POST(request: NextRequest) {
       }
       await create<VerificationToken>(VERIFICATION_TOKENS_FILE, vt)
       await sendVerificationEmail(user.email, vToken, app.name, locale, user.displayName)
+
+      // 🔒 開啟驗證的 app: 不發 token — 要求先驗證信箱再登入 (發 token = 繞過驗證)
+      writeAuditLog({ action: 'user.register', actorId: user.id, actorEmail: user.email, appId: app.id, ip: request.headers.get('x-forwarded-for') ?? undefined })
+      return success({ user: toPublicUser(user), requiresVerification: true }, 201, origin)
     }
 
     const accessToken = await signAccessToken(user, app)
