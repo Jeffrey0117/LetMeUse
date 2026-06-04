@@ -1,40 +1,15 @@
-import { NextRequest } from 'next/server'
-import { getAll, create, PROJECTS_FILE } from '@/lib/storage'
-import { CreateProjectSchema, type Project } from '@/lib/models'
-import { generateProjectId } from '@/lib/id'
-import { success, fail } from '@/lib/api-result'
+import { NextResponse } from 'next/server'
 
-export async function GET() {
-  try {
-    const projects = await getAll<Project>(PROJECTS_FILE)
-    return success(projects)
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
+// 廣告產生器 (projects/ads) 已移到獨立的 adman 專案。
+// LetMeUse 是純 auth IdP — 此端點停用 (本來是匿名 CRUD = 安全洞)。
+function gone() {
+  return NextResponse.json(
+    { error: 'This feature has moved to the standalone adman app.' },
+    { status: 410 }
+  )
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const parsed = CreateProjectSchema.safeParse(body)
-    if (!parsed.success) {
-      const messages = parsed.error.issues.map((i) => i.message)
-      return fail(messages.join(', '), 400)
-    }
-
-    const now = new Date().toISOString()
-    const project: Project = {
-      id: generateProjectId(),
-      name: parsed.data.name,
-      description: parsed.data.description ?? '',
-      domain: parsed.data.domain,
-      createdAt: now,
-      updatedAt: now,
-    }
-
-    await create(PROJECTS_FILE, project)
-    return success(project, 201)
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
-}
+export function GET() { return gone() }
+export function POST() { return gone() }
+export function PUT() { return gone() }
+export function DELETE() { return gone() }

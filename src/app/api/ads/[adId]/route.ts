@@ -1,65 +1,14 @@
-import { NextRequest } from 'next/server'
-import { getById, update, remove, ADS_FILE } from '@/lib/storage'
-import { UpdateAdSchema, type Ad } from '@/lib/models'
-import { success, fail } from '@/lib/api-result'
+import { NextResponse } from 'next/server'
 
-type RouteParams = { params: Promise<{ adId: string }> }
-
-export async function GET(_request: NextRequest, { params }: RouteParams) {
-  try {
-    const { adId } = await params
-    const ad = await getById<Ad>(ADS_FILE, adId)
-    if (!ad) {
-      return fail('Ad not found', 404)
-    }
-    return success(ad)
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
+// 廣告產生器 (projects/ads) 已移到獨立的 adman 專案。
+// LetMeUse 是純 auth IdP — 此端點停用 (本來是匿名 CRUD = 安全洞)。
+function gone() {
+  return NextResponse.json(
+    { error: 'This feature has moved to the standalone adman app.' },
+    { status: 410 }
+  )
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { adId } = await params
-    const body = await request.json()
-    const parsed = UpdateAdSchema.safeParse(body)
-    if (!parsed.success) {
-      const messages = parsed.error.issues.map((i) => i.message)
-      return fail(messages.join(', '), 400)
-    }
-
-    const existing = await getById<Ad>(ADS_FILE, adId)
-    if (!existing) {
-      return fail('Ad not found', 404)
-    }
-
-    const updates: Partial<Ad> = {
-      ...parsed.data,
-      updatedAt: new Date().toISOString(),
-      style: parsed.data.style
-        ? { ...existing.style, ...parsed.data.style }
-        : undefined,
-    }
-
-    const updated = await update<Ad>(ADS_FILE, adId, updates)
-    if (!updated) {
-      return fail('Ad not found', 404)
-    }
-    return success(updated)
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
-}
-
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
-  try {
-    const { adId } = await params
-    const deleted = await remove<Ad>(ADS_FILE, adId)
-    if (!deleted) {
-      return fail('Ad not found', 404)
-    }
-    return success({ deleted: true })
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
-}
+export function GET() { return gone() }
+export function PUT() { return gone() }
+export function DELETE() { return gone() }

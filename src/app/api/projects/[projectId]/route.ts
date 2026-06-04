@@ -1,63 +1,14 @@
-import { NextRequest } from 'next/server'
-import { getById, update, remove, PROJECTS_FILE, findByField, ADS_FILE } from '@/lib/storage'
-import { UpdateProjectSchema, type Project } from '@/lib/models'
-import type { Ad } from '@/lib/models'
-import { success, fail } from '@/lib/api-result'
+import { NextResponse } from 'next/server'
 
-type RouteParams = { params: Promise<{ projectId: string }> }
-
-export async function GET(_request: NextRequest, { params }: RouteParams) {
-  try {
-    const { projectId } = await params
-    const project = await getById<Project>(PROJECTS_FILE, projectId)
-    if (!project) {
-      return fail('Project not found', 404)
-    }
-    return success(project)
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
+// 廣告產生器 (projects/ads) 已移到獨立的 adman 專案。
+// LetMeUse 是純 auth IdP — 此端點停用 (本來是匿名 CRUD = 安全洞)。
+function gone() {
+  return NextResponse.json(
+    { error: 'This feature has moved to the standalone adman app.' },
+    { status: 410 }
+  )
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { projectId } = await params
-    const body = await request.json()
-    const parsed = UpdateProjectSchema.safeParse(body)
-    if (!parsed.success) {
-      const messages = parsed.error.issues.map((i) => i.message)
-      return fail(messages.join(', '), 400)
-    }
-
-    const updated = await update<Project>(PROJECTS_FILE, projectId, {
-      ...parsed.data,
-      updatedAt: new Date().toISOString(),
-    } as Partial<Project>)
-
-    if (!updated) {
-      return fail('Project not found', 404)
-    }
-    return success(updated)
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
-}
-
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
-  try {
-    const { projectId } = await params
-
-    const ads = await findByField<Ad>(ADS_FILE, 'projectId', projectId)
-    if (ads.length > 0) {
-      return fail(`Cannot delete project with ${ads.length} associated ad(s). Delete ads first.`, 409)
-    }
-
-    const deleted = await remove<Project>(PROJECTS_FILE, projectId)
-    if (!deleted) {
-      return fail('Project not found', 404)
-    }
-    return success({ deleted: true })
-  } catch (error) {
-        return fail('Operation failed', 500)
-  }
-}
+export function GET() { return gone() }
+export function PUT() { return gone() }
+export function DELETE() { return gone() }
