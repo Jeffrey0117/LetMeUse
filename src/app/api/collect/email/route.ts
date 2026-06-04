@@ -1,4 +1,5 @@
 import { type NextRequest } from 'next/server'
+import { safeEqual } from '@/lib/auth/safe-compare'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { getById, create, getAll, APPS_FILE, EMAIL_LEADS_FILE } from '@/lib/storage'
 import { generateEmailLeadId } from '@/lib/id'
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Verify app credentials
     const app = await getById<App>(APPS_FILE, parsed.appId)
-    if (!app || app.secret !== parsed.appSecret) {
+    if (!app || !safeEqual(app.secret, parsed.appSecret)) {
       return fail('Invalid app credentials', 401, origin)
     }
 
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
   }
 
   const app = await getById<App>(APPS_FILE, appId)
-  if (!app || app.secret !== appSecret) {
+  if (!app || !safeEqual(app.secret, appSecret)) {
     return fail('Invalid app credentials', 401, origin)
   }
 

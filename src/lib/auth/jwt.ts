@@ -60,6 +60,7 @@ export async function verifyAccessToken(
   appSecret: string
 ): Promise<AccessTokenPayload> {
   const key = getSecretKey(appSecret)
-  const { payload } = await jwtVerify(token, key)
+  // 🔒 鎖死 HS256 — 不讓攻擊者在 header 換 alg (alg confusion / none)
+  const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] })
   return payload as unknown as AccessTokenPayload
 }

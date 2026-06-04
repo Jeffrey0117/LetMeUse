@@ -42,11 +42,15 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       html: options.html,
     })
   } else {
-    // Dev mode fallback: log email to console
-    console.info('[email] SMTP not configured — logging email to console')
+    // SMTP 沒設: 正式環境 = 硬錯 (不能把 reset/verify token 寫進 log 任人撿走);
+    // dev 才允許 fallback, 且仍不印 HTML 本體 (內含 token 連結)
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[email] SMTP not configured — refusing to send (would leak token to logs)')
+    }
+    console.info('[email] SMTP not configured (dev) — email NOT sent')
     console.info(`  To:      ${options.to}`)
     console.info(`  Subject: ${options.subject}`)
-    console.info(`  HTML:\n${options.html}`)
+    console.info('  (HTML body withheld — contains a one-time token; configure SMTP to actually send)')
   }
 }
 

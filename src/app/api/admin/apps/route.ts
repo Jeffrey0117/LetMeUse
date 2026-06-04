@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
       return authResult
     }
 
-    const apps = await getAll<App>(APPS_FILE)
+    // 🔒 不對 list 回 secret —— secret 是 HS256 signing key, 列表外露 = 任一 admin 撈光全部 app 的鑰匙。
+    // secret 只在「建立 app」當下 (POST) 回傳一次; 要再拿就重新產生 (regenerate)。
+    const apps = (await getAll<App>(APPS_FILE)).map(({ secret, ...rest }) => rest)
     return success({ apps }, 200, origin)
   } catch (error) {
         return fail('Operation failed', 500, origin)

@@ -1,4 +1,5 @@
 import { type NextRequest } from 'next/server'
+import { safeEqual } from '@/lib/auth/safe-compare'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { completeCheckoutSession, getCheckoutSession } from '@/lib/billing/service'
 import { getById, APPS_FILE } from '@/lib/storage'
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (appId && appSecret) {
       // Server-to-server verification
       const app = await getById<App>(APPS_FILE, appId)
-      if (!app || app.secret !== appSecret) {
+      if (!app || !safeEqual(app.secret, appSecret)) {
         return fail('Invalid app credentials', 401, origin)
       }
       if (session.appId !== appId) {

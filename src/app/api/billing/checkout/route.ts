@@ -1,4 +1,5 @@
 import { type NextRequest } from 'next/server'
+import { safeEqual } from '@/lib/auth/safe-compare'
 import { corsResponse, success, fail } from '@/lib/api-result'
 import { createCheckoutSession, getCheckoutSession } from '@/lib/billing/service'
 import { getById, APPS_FILE } from '@/lib/storage'
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Verify app credentials
     const app = await getById<App>(APPS_FILE, parsed.appId)
-    if (!app || app.secret !== parsed.appSecret) {
+    if (!app || !safeEqual(app.secret, parsed.appSecret)) {
       return fail('Invalid app credentials', 401, origin)
     }
 

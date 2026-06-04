@@ -6,6 +6,7 @@ import { APPS_FILE } from '../storage'
 import type { App } from '../auth-models'
 import { corsHeaders, fail } from '../api-result'
 import type { Permission } from '../rbac'
+import { safeEqual } from './safe-compare'
 
 // Re-export for convenience
 export { corsResponse, success, paginated, fail, corsHeaders } from '../api-result'
@@ -24,7 +25,7 @@ export async function authenticateRequest(
 
   // ── Service token bypass (server-to-server admin access) ──
   const serviceToken = process.env.LETMEUSE_SERVICE_TOKEN
-  if (serviceToken && token === serviceToken) {
+  if (serviceToken && safeEqual(token, serviceToken)) {
     const apps = await getAll<App>(APPS_FILE)
     const systemApp = apps[0] ?? { id: 'system', secret: '', name: 'System', domains: [], createdAt: '', updatedAt: '' }
     return {

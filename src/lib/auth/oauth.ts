@@ -1,4 +1,5 @@
 import type { OAuthProviderName, OAuthProviderConfig } from '../auth-models'
+import { safeEqual } from './safe-compare'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
@@ -191,7 +192,7 @@ async function hmacSign(data: string, secret: string): Promise<string> {
 
 async function hmacVerify(data: string, signature: string, secret: string): Promise<boolean> {
   const expected = await hmacSign(data, secret)
-  return expected === signature
+  return safeEqual(expected, signature)
 }
 
 export async function generateOAuthState(
