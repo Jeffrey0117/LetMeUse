@@ -7,7 +7,7 @@ import { verifyPassword, DUMMY_HASH } from '@/lib/auth/password'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
 import { hashToken } from '@/lib/auth/token-hash'
 import { corsResponse, success, fail } from '@/lib/api-result'
-import { checkRateLimit, recordFailure, resetFailures, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
+import { checkRateLimit, recordFailure, resetFailures, rateLimitResponse, RATE_LIMITS, checkRateLimitByKey, recordFailureByKey, resetFailuresByKey } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
 import { writeAuditLog } from '@/lib/audit'
 import { createSession } from '@/lib/session'
@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
 
     const { appId, email, password } = parsed.data
 
+    // 🔒 per-account 撞庫鎖 — 鎖跟著「帳號」走, 攻擊者換 IP / 偽造 XFF 也繞不過單一帳號的失敗鎖
+    const acctKey = `login-acct:${appId}:${email.toLowerCase()}`
+    const acctCheck = await checkRateLimitByKey(acctKey, RATE_LIMITS.login)
+    if (!acctCheck.allowed) {
+      return rateLimitResponse(acctCheck.retryAfterSeconds ?? 900, origin)
+    }
+
     const app = await getById<App>(APPS_FILE, appId)
     if (!app) {
       return fail('Invalid credentials', 401, origin)
@@ -47,6 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (!user || !valid) {
       await recordFailure(request, 'login', RATE_LIMITS.login)
+      await recordFailureByKey(acctKey, RATE_LIMITS.login)
       writeAuditLog({ action: 'user.login_failed', actorId: user?.id ?? 'unknown', actorEmail: user?.email, appId, details: user ? undefined : { email }, ip: request.headers.get('x-forwarded-for') ?? undefined })
       return fail('Invalid credentials', 401, origin)
     }
@@ -61,6 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     await resetFailures(request, 'login')
+    await resetFailuresByKey(acctKey)
 
     const now = new Date().toISOString()
     await update<AuthUser>(USERS_FILE, user.id, { lastLoginAt: now, updatedAt: now } as Partial<AuthUser>)

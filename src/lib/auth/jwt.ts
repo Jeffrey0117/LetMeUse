@@ -35,7 +35,10 @@ export async function signAccessToken(
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt()
-    .setExpirationTime('24h')
+    // 🔒 24h → 4h: 縮短「登出/停用後舊 access token 還能用」的窗口 (24h→4h)。
+    // SDK 會在到期前 5 分鐘自動 refresh (src/sdk/auth.ts scheduleRefresh), 對使用者透明;
+    // refresh route 會擋 disabled / 已登出 (refresh token 已刪) → 真正的撤銷。
+    .setExpirationTime('4h')
     .sign(key)
 }
 

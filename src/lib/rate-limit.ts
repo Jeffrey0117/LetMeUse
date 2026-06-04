@@ -41,8 +41,12 @@ function getMemEntry(key: string, windowMs: number): MemEntry {
 // ── Client IP extraction ────────────────────────────────
 
 function getClientIp(request: NextRequest): string {
-  const trustProxy = process.env.TRUST_PROXY === 'true'
+  // Cloudflare 設的 CF-Connecting-IP 是真實 client IP, client 無法偽造 (CF 會覆寫),
+  // 優先用它 → 修掉「攻擊者亂塞 X-Forwarded-For 換新 bucket 繞過 rate limit」。
+  const cf = request.headers.get('cf-connecting-ip')?.trim()
+  if (cf) return cf
 
+  const trustProxy = process.env.TRUST_PROXY === 'true'
   if (trustProxy) {
     const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     if (forwarded) return forwarded
@@ -272,6 +276,32 @@ export async function resetFailures(
   if (!ok) {
     resetMemoryFailures(key)
   }
+}
+
+// ── Key-based variants (per-account lockout etc.) ───────
+// 用明確的 key (不靠 IP) — 例如 `login-acct:${appId}:${email}`,
+// 讓鎖跟著「帳號」走, 攻擊者換 IP 也無法繞過單一帳號的失敗鎖 (撞庫防護)。
+
+export async function checkRateLimitByKey(
+  key: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  const redisResult = await checkRedis(key, config)
+  if (redisResult) return redisResult
+  return checkMemory(key, config)
+}
+
+export async function recordFailureByKey(
+  key: string,
+  config: RateLimitConfig
+): Promise<void> {
+  const ok = await recordRedisFailure(key, config)
+  if (!ok) recordMemoryFailure(key, config)
+}
+
+export async function resetFailuresByKey(key: string): Promise<void> {
+  const ok = await resetRedisFailures(key)
+  if (!ok) resetMemoryFailures(key)
 }
 
 // ── Rate limit response helper ──────────────────────────
