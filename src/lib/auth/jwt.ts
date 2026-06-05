@@ -34,6 +34,7 @@ export async function signAccessToken(
   })
     .setSubject(user.id)
     .setIssuedAt()
+    .setIssuer((process.env.NEXT_PUBLIC_BASE_URL || 'https://letmeuse.isnowfriend.com').replace(/\/$/, ''))
     // 🔒 24h → 4h: 縮短「登出/停用後舊 access token 還能用」的窗口。
     // SDK 到期前 5 分自動 refresh (對使用者透明); refresh route 擋 disabled/已登出 = 真撤銷。
     .setExpirationTime('4h')
