@@ -7,12 +7,13 @@ import type { ApiDeps } from './api'
 import { apiPost, apiGet, ApiError } from './api'
 
 /**
- * 只有「真的被拒」(401/403) 才該清 token。
+ * 只有「真的被拒」(401) 才該清 token。
  * 429 限流 / 5xx / 網路抖動 = 暫時性 → 保留 token, 之後重試。
- * 沒有這個區分的話, server 抖一下使用者就被強制登出 (寶寶 2026-06-08 被踢到罵)。
+ * 403 也不算 — Cloudflare WAF challenge 會回 403, 誤清會把好好登入的人踢下線。
+ * (LetMeUse app 層拒絕 token 一律回 401; 沒有這個區分的話 server 抖一下就強制登出 — 寶寶 2026-06-08 被踢到罵)
  */
 function isAuthRejection(err: unknown): boolean {
-  return err instanceof ApiError && (err.status === 401 || err.status === 403)
+  return err instanceof ApiError && err.status === 401
 }
 
 export class AuthManager {
