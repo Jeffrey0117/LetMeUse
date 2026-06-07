@@ -4,7 +4,16 @@
 
 import type { LetMeUseUser, AuthCallback, AuthEvent } from './types'
 import type { ApiDeps } from './api'
-import { apiPost, apiGet } from './api'
+import { apiPost, apiGet, ApiError } from './api'
+
+/**
+ * 只有「真的被拒」(401/403) 才該清 token。
+ * 429 限流 / 5xx / 網路抖動 = 暫時性 → 保留 token, 之後重試。
+ * 沒有這個區分的話, server 抖一下使用者就被強制登出 (寶寶 2026-06-08 被踢到罵)。
+ */
+function isAuthRejection(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 401 || err.status === 403)
+}
 
 export class AuthManager {
   private readonly accessKey: string
@@ -141,10 +150,15 @@ export class AuthManager {
       }
       this.storeTokens(data.accessToken, data.refreshToken)
       this.scheduleRefresh()
-    } catch {
-      this.clearTokens()
-      this._currentUser = null
-      this.fireCallbacks('refresh_failed')
+    } catch (err) {
+      if (isAuthRejection(err)) {
+        this.clearTokens()
+        this._currentUser = null
+        this.fireCallbacks('refresh_failed')
+      } else {
+        // 暫時性失敗 (限流/5xx/斷線) → 保留 token, 1 分鐘後重試
+        this.refreshTimer = setTimeout(() => this.doRefresh(), 60 * 1000)
+      }
     }
   }
 
@@ -207,7 +221,7 @@ export class AuthManager {
       const data = (await apiGet(this.apiDeps, '/api/auth/me', token)) as { user: LetMeUseUser }
       this._currentUser = data.user
       this.scheduleRefresh()
-    } catch {
+    } catch (meErr) {
       const rt = this.getStoredRefreshToken()
       if (rt) {
         try {
@@ -221,10 +235,11 @@ export class AuthManager {
           }
           this._currentUser = meData.user
           this.scheduleRefresh()
-        } catch {
-          this.clearTokens()
+        } catch (refreshErr) {
+          // 只有真的被拒 (401/403) 才清; 限流/5xx/網路抖 → 保留 token 下次再試
+          if (isAuthRejection(refreshErr)) this.clearTokens()
         }
-      } else {
+      } else if (isAuthRejection(meErr)) {
         this.clearTokens()
       }
     }

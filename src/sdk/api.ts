@@ -9,6 +9,18 @@ export interface ApiDeps {
   t: (key: string) => string
 }
 
+/**
+ * API error with HTTP status — 讓呼叫端能區分「真的被拒 (401/403)」vs
+ * 「暫時性失敗 (429 限流 / 5xx / 網路)」。後者不該觸發 clearTokens。
+ */
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
+
 export async function apiPost(deps: ApiDeps, path: string, body: Record<string, unknown>): Promise<unknown> {
   const res = await fetch(`${deps.baseUrl}${path}`, {
     method: 'POST',
@@ -18,7 +30,7 @@ export async function apiPost(deps: ApiDeps, path: string, body: Record<string, 
   const json = await res.json()
   if (!res.ok) {
     const raw = (json as { error?: string }).error ?? ''
-    throw new Error(translateError(raw, deps.t) || deps.t('error.generic'))
+    throw new ApiError(translateError(raw, deps.t) || deps.t('error.generic'), res.status)
   }
   return (json as { data?: unknown }).data ?? json
 }
@@ -30,7 +42,7 @@ export async function apiGet(deps: ApiDeps, path: string, token?: string): Promi
   const json = await res.json()
   if (!res.ok) {
     const raw = (json as { error?: string }).error ?? ''
-    throw new Error(translateError(raw, deps.t) || deps.t('error.generic'))
+    throw new ApiError(translateError(raw, deps.t) || deps.t('error.generic'), res.status)
   }
   return (json as { data?: unknown }).data ?? json
 }
@@ -44,7 +56,7 @@ export async function apiPutAuth(deps: ApiDeps, path: string, body: Record<strin
   const json = await res.json()
   if (!res.ok) {
     const raw = (json as { error?: string }).error ?? ''
-    throw new Error(translateError(raw, deps.t) || deps.t('error.generic'))
+    throw new ApiError(translateError(raw, deps.t) || deps.t('error.generic'), res.status)
   }
   return (json as { data?: unknown }).data ?? json
 }
@@ -58,7 +70,7 @@ export async function apiPostAuth(deps: ApiDeps, path: string, body: Record<stri
   const json = await res.json()
   if (!res.ok) {
     const raw = (json as { error?: string }).error ?? ''
-    throw new Error(translateError(raw, deps.t) || deps.t('error.generic'))
+    throw new ApiError(translateError(raw, deps.t) || deps.t('error.generic'), res.status)
   }
   return (json as { data?: unknown }).data ?? json
 }
