@@ -4,7 +4,7 @@ vi.mock('@/lib/rbac', () => ({
   getPermissionsForRole: vi.fn().mockResolvedValue(['read']),
 }))
 
-import { signAccessToken, verifyAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
+import { signAccessToken, verifyAccessToken, signRefreshTokenJWT, decodeJwtPayloadSegment } from '@/lib/auth/jwt'
 import type { App, AuthUser } from '@/lib/auth-models'
 
 const mockApp: App = {
@@ -68,6 +68,28 @@ describe('jwt', () => {
       expect(payload).toHaveProperty('iat')
       expect(payload).toHaveProperty('exp')
       expect(payload.exp).toBeGreaterThan(payload.iat)
+    })
+  })
+
+  describe('decodeJwtPayloadSegment (2026-06-08 atob/base64url 踢人事故回歸)', () => {
+    it('decodes payload of a token signed for a non-ASCII (中文) displayName user', async () => {
+      const zhUser: AuthUser = { ...mockUser, displayName: '切板職人|低調貓' }
+      const token = await signAccessToken(zhUser, mockApp)
+      const seg = token.split('.')[1]
+
+      // 中文 name → UTF-8 高位元組 → base64url 含 -/_ (正是 atob 會 throw 的輸入)
+      expect(/[-_]/.test(seg)).toBe(true)
+
+      const payload = decodeJwtPayloadSegment(seg)
+      expect(payload.app).toBe('app_test123')
+      expect(payload.name).toBe('切板職人|低調貓')
+    })
+
+    it('decodes plain ASCII payloads identically', async () => {
+      const token = await signAccessToken(mockUser, mockApp)
+      const payload = decodeJwtPayloadSegment(token.split('.')[1])
+      expect(payload.app).toBe('app_test123')
+      expect(payload.sub).toBe('usr_test456')
     })
   })
 

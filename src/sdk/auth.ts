@@ -115,7 +115,11 @@ export class AuthManager {
 
   private parseJwtExp(token: string): number | null {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
+      // JWT 段是 base64url — atob 遇到 -/_ 會 throw (中文名 user 的 payload 必含),
+      // 解不到 exp = 排不進主動 refresh → token 過期被踢。先轉回標準 base64 再 UTF-8 解。
+      const seg = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+      const bytes = Uint8Array.from(atob(seg), c => c.charCodeAt(0))
+      const payload = JSON.parse(new TextDecoder().decode(bytes))
       return payload.exp ? payload.exp * 1000 : null
     } catch {
       return null

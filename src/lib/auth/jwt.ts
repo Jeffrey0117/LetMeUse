@@ -19,6 +19,16 @@ function getSecretKey(appSecret: string): Uint8Array {
   return new TextEncoder().encode(appSecret)
 }
 
+/**
+ * 解 JWT 的 base64url payload 段 (驗簽前先讀 app claim 用)。
+ * ⚠️ 不能用 atob():JWT 段是 base64url (-/_),atob 只吃標準 base64,遇到 -/_ 直接 throw。
+ * 純 ASCII payload 的 base64url 結構上不會出現 -/_,所以英文名 user 一直沒事;
+ * 非 ASCII displayName (中文名) 的 payload 必含 -/_ → 2026-06-08 全請求 401 被踢事故。
+ */
+export function decodeJwtPayloadSegment(seg: string): Record<string, unknown> {
+  return JSON.parse(Buffer.from(seg, 'base64url').toString('utf-8'))
+}
+
 export async function signAccessToken(
   user: AuthUser,
   app: App

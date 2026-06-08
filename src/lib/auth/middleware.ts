@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyAccessToken, type AccessTokenPayload } from './jwt'
+import { verifyAccessToken, decodeJwtPayloadSegment, type AccessTokenPayload } from './jwt'
 import { getById, getAll } from '../storage'
 import { APPS_FILE } from '../storage'
 import type { App } from '../auth-models'
@@ -50,7 +50,8 @@ export async function authenticateRequest(
   }
 
   try {
-    const payloadRaw = JSON.parse(atob(parts[1]))
+    // base64url 安全解碼 — atob 遇到 -/_ 會 throw (中文名 user 全 401 被踢的死因)
+    const payloadRaw = decodeJwtPayloadSegment(parts[1])
     const appId = payloadRaw.app as string
 
     if (!appId) {
