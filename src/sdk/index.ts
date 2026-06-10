@@ -69,6 +69,8 @@ function getWidgetDeps(): WidgetDeps {
 
 // ── Public API ──────────────────────────────────────────
 
+let loggingOut = false
+
 const letmeuse = {
   get ready() {
     return authManager.ready
@@ -91,21 +93,29 @@ const letmeuse = {
     createModal(getLoginModalDeps(), 'register')
   },
   async logout() {
-    const token = authManager.getStoredAccessToken()
-    if (token) {
-      try {
-        await fetch(`${baseUrl}/api/auth/logout`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        })
-      } catch {
-        // Best effort
+    // 重入鎖: 宿主頁常在自己的 onAuthChange('logout') handler 裡回呼 letmeuse.logout(),
+    // 沒有鎖會經 fireCallbacks 無限遞迴 (pipee 2026-06-10 爆 Maximum call stack)。
+    if (loggingOut) return
+    loggingOut = true
+    try {
+      const token = authManager.getStoredAccessToken()
+      if (token) {
+        try {
+          await fetch(`${baseUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        } catch {
+          // Best effort
+        }
       }
+      authManager.clearTokens()
+      authManager.currentUser = null
+      authManager.cancelRefresh()
+      authManager.fireCallbacks('logout')
+    } finally {
+      loggingOut = false
     }
-    authManager.clearTokens()
-    authManager.currentUser = null
-    authManager.cancelRefresh()
-    authManager.fireCallbacks('logout')
   },
   getToken() {
     return authManager.getStoredAccessToken()
