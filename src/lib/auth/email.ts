@@ -71,9 +71,17 @@ export async function sendVerificationEmail(
   token: string,
   appName: string,
   locale: Locale = 'en',
-  displayName?: string
+  displayName?: string,
+  // The app's own production origin (e.g. https://pipee.tw). When given, the
+  // verify link lives on the app's domain (CloudPipe proxies /__lmu/* back to
+  // this verify API), so the user never sees a letmeuse URL. Falls back to the
+  // LetMeUse domain when the app has no https origin.
+  appBaseUrl?: string
 ): Promise<void> {
-  const verifyUrl = `${BASE_URL}/api/auth/verify-email?token=${token}`
+  const base = appBaseUrl
+    ? `${appBaseUrl.replace(/\/$/, '')}/__lmu/verify-email`
+    : `${BASE_URL}/api/auth/verify-email`
+  const verifyUrl = `${base}?token=${token}`
 
   const { subject, html } = verificationEmailTemplate({
     verifyUrl,

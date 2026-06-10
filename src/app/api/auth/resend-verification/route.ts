@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
     }
 
     await create<VerificationToken>(VERIFICATION_TOKENS_FILE, vt)
-    await sendVerificationEmail(user.email, vToken, app.name, 'zh', user.displayName)
+    const appBaseUrl = (app.domains ?? []).find((d) => d.startsWith('https://'))
+    await sendVerificationEmail(user.email, vToken, app.name, 'zh', user.displayName, appBaseUrl)
 
     return success({ sent: true }, 200, origin)
   } catch (error) {

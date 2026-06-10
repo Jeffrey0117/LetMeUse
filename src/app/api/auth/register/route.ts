@@ -77,7 +77,10 @@ export async function POST(request: NextRequest) {
         createdAt: now,
       }
       await create<VerificationToken>(VERIFICATION_TOKENS_FILE, vt)
-      await sendVerificationEmail(user.email, vToken, app.name, locale, user.displayName)
+      // Verify link lives on the app's own domain (CloudPipe proxies /__lmu/*),
+      // so the user never sees a letmeuse URL.
+      const appBaseUrl = (app.domains ?? []).find((d) => d.startsWith('https://'))
+      await sendVerificationEmail(user.email, vToken, app.name, locale, user.displayName, appBaseUrl)
 
       // 🔒 開啟驗證的 app: 不發 token — 要求先驗證信箱再登入 (發 token = 繞過驗證)
       writeAuditLog({ action: 'user.register', actorId: user.id, actorEmail: user.email, appId: app.id, ip: request.headers.get('x-forwarded-for') ?? undefined })
