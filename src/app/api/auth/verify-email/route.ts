@@ -9,11 +9,14 @@ import { writeAuditLog } from '@/lib/audit'
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
 // Land the user back on the product they signed up for (Pipee, Quickky…), not
-// the LetMeUse login page. Prefer the app's own production https domain; fall
-// back to LetMeUse only when we don't know the app.
-function appLandingUrl(app: App | null, status: string): string {
-  const domains = (app?.domains ?? []) as string[]
-  const prod = domains.find((d) => d.startsWith('https://'))
+// the LetMeUse login page. The link is hit on the app's own domain and proxied
+// via CloudPipe /__lmu/*, which forwards x-forwarded-host — so even when we
+// can't resolve the app (already-used / invalid token) we still know which
+// domain to send them back to. Order: x-forwarded-host → app https domain → BASE_URL.
+function landingUrl(request: NextRequest, app: App | null, status: string): string {
+  const xfh = request.headers.get('x-forwarded-host')
+  if (xfh) return `https://${xfh}/?verified=${status}`
+  const prod = ((app?.domains ?? []) as string[]).find((d) => d.startsWith('https://'))
   if (prod) return `${prod.replace(/\/$/, '')}/?verified=${status}`
   return `${BASE_URL}/login?verified=${status}`
 }
@@ -40,8 +43,8 @@ export async function GET(request: NextRequest) {
     const verificationToken = matches[0] ?? null
 
     if (!verificationToken) {
-      // Token already used or invalid — redirect gracefully instead of hard error
-      return NextResponse.redirect(`${BASE_URL}/login?verified=already`)
+      // Token already used or invalid — redirect gracefully (stay on app domain)
+      return NextResponse.redirect(landingUrl(request, null, 'already'))
     }
 
     if (new Date(verificationToken.expiresAt) < new Date()) {
@@ -76,7 +79,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Redirect back to the app's own domain (branded landing), not LetMeUse.
-    return NextResponse.redirect(appLandingUrl(app, 'true'))
+    return NextResponse.redirect(landingUrl(request, app, 'true'))
   } catch (error) {
         return fail('Verification failed', 500, origin)
   }
