@@ -9,11 +9,23 @@ const SMTP_PORT = Number(process.env.SMTP_PORT ?? '587')
 const SMTP_USER = process.env.SMTP_USER ?? ''
 const SMTP_PASS = process.env.SMTP_PASS ?? ''
 const SMTP_FROM = process.env.SMTP_FROM ?? 'LetMeUse <noreply@letmeuse.dev>'
+// LetMeUse is shared auth infra — the email should look like it comes from the
+// product the user actually signed up for (Pipee, Quickky…), not "LetMeUse".
+// Keep the configured sending ADDRESS (deliverability/SPF) but swap the display
+// NAME to the app's name when we know it.
+const FROM_ADDRESS = SMTP_FROM.match(/<([^>]+)>/)?.[1] ?? SMTP_FROM
+
+function buildFrom(fromName?: string): string {
+  if (!fromName) return SMTP_FROM
+  const safe = fromName.replace(/[<>"\r\n]/g, '').trim()
+  return safe ? `${safe} <${FROM_ADDRESS}>` : SMTP_FROM
+}
 
 interface EmailOptions {
   readonly to: string
   readonly subject: string
   readonly html: string
+  readonly fromName?: string
 }
 
 function isSmtpConfigured(): boolean {
@@ -36,7 +48,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
   if (isSmtpConfigured()) {
     const transporter = createTransport()
     await transporter.sendMail({
-      from: SMTP_FROM,
+      from: buildFrom(options.fromName),
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -70,7 +82,7 @@ export async function sendVerificationEmail(
     locale,
   })
 
-  await sendEmail({ to: email, subject, html })
+  await sendEmail({ to: email, subject, html, fromName: appName })
 }
 
 export async function sendPasswordResetEmail(
@@ -89,5 +101,5 @@ export async function sendPasswordResetEmail(
     locale,
   })
 
-  await sendEmail({ to: email, subject, html })
+  await sendEmail({ to: email, subject, html, fromName: appName })
 }

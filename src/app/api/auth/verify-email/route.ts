@@ -8,6 +8,16 @@ import { writeAuditLog } from '@/lib/audit'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
+// Land the user back on the product they signed up for (Pipee, Quickky…), not
+// the LetMeUse login page. Prefer the app's own production https domain; fall
+// back to LetMeUse only when we don't know the app.
+function appLandingUrl(app: App | null, status: string): string {
+  const domains = (app?.domains ?? []) as string[]
+  const prod = domains.find((d) => d.startsWith('https://'))
+  if (prod) return `${prod.replace(/\/$/, '')}/?verified=${status}`
+  return `${BASE_URL}/login?verified=${status}`
+}
+
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request.headers.get('origin'))
 }
@@ -65,8 +75,8 @@ export async function GET(request: NextRequest) {
       appId: verificationToken.appId,
     })
 
-    // Redirect to login with success message
-    return NextResponse.redirect(`${BASE_URL}/login?verified=true`)
+    // Redirect back to the app's own domain (branded landing), not LetMeUse.
+    return NextResponse.redirect(appLandingUrl(app, 'true'))
   } catch (error) {
         return fail('Verification failed', 500, origin)
   }
