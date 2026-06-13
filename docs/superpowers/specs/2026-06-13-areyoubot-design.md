@@ -19,7 +19,7 @@
 - 不擋「鐵了心專門針對你的真人攻擊」——沒有任何 CAPTCHA 做得到，不假裝。
 - 不做行為分析/風險評分（自架沒有資料網，做不好，明確不做）。
 - 不做圖像/拼圖挑戰（被代解服務 + AI 視覺破解，且煩使用者）。
-- 第一版不做多租戶計費、不做 dashboard 統計圖表（之後要再加）。
+- 第一版不做多租戶計費、不做複雜分析圖表（只做簡單統計面板，見 §10）。
 
 ---
 
@@ -43,14 +43,14 @@
 | `GET /api/challenge` | 發一道**無狀態、HMAC 簽章**的挑戰 | — |
 | `POST /api/verify` | 宿主後端驗證解答（防重放） | api-result / cors |
 | `widget.js` | esbuild IIFE，背景解 PoW，自動接表單或給 callback | letmeuse SDK 打包方式 |
-| 後台 `/admin` | 建 site → 拿 sitekey + secret（自己生），調難度 | letmeuse admin/apps |
+| 後台 `/admin` | 建 site → 拿 sitekey + secret（自己生），調難度，**簡單統計面板** | **吃狗糧：用 letmeuse 登入保護** |
 | MCP tools | `areyoubot_create_site` / `list_sites` / `verify` | cloudpipe manifest |
-| 儲存 | site 清單 → JSON 檔（或 selfize/selfbase）；防重放 → Redis 短期 set（無 Redis 則記憶體 fallback） | storage.ts / rate-limit.ts redis fallback |
+| 儲存 | site 清單 + 驗證計數 → **selfize/selfbase**；防重放 → Redis 短期 set（無 Redis 則記憶體 fallback） | selfize / rate-limit.ts redis fallback |
 | 整合文件 | 「怎麼套」+ `/integrate-areyoubot` 指令 | integrate-letmeuse |
 
 ### 命名常數
 - sitekey 前綴 `ayb_`、secret 前綴 `aybsk_`
-- widget 屬性 `data-ayb-sitekey`（必填）、`data-ayb-callback`（選填）、`data-ayb-difficulty`（選填覆寫）
+- widget 屬性 `data-ayb-sitekey`（必填）、`data-ayb-callback`（選填）、`data-ayb-difficulty`（選填覆寫）、`data-ayb-badge`（選填，`off` 可關掉「are you bot? 😏」徽章）
 - 隱藏欄位名 `areyoubot-token`
 
 ---
@@ -157,16 +157,17 @@ POST https://areyoubot.../api/verify
 ## 9. 分階段（之後 writing-plans 展開）
 
 1. **核心**：`/challenge` + `/verify` + PoW 驗算 + HMAC 簽章（無 UI，先用 test 打通）。
-2. **widget.js**：Web Worker 解題 + 自動接表單 + 手動 API。
-3. **後台 + 儲存**：建 site / sitekey-secret / 難度設定。
-4. **生態系**：MCP tools + CloudPipe 部署 + `/integrate-areyoubot` 文件。
-5. **加固**：rate limit、replay set、難度上限、e2e。
+2. **widget.js**：Web Worker 解題 + 自動接表單 + 手動 API + 「are you bot? 😏」徽章。
+3. **儲存 + 後台**：selfize/selfbase 接好 → 建 site / sitekey-secret / 難度設定；後台用 letmeuse 登入保護。
+4. **統計面板**：challenge/verify 計數寫進 selfbase + 後台簡單圖表。
+5. **生態系**：MCP tools + CloudPipe 部署 + `/integrate-areyoubot` 文件。
+6. **加固**：rate limit、replay set、難度上限、e2e。
 
 ---
 
-## 10. 開放問題（review 時定）
+## 10. 已拍板決定（2026-06-13）
 
-- 儲存 site 清單：JSON 檔 vs selfize/selfbase？（預設 JSON，最少依賴）
-- 後台要不要共用 letmeuse 登入（套自己家的 auth），還是先單一 admin token？
-- 第一版要不要 dashboard 統計（建議：不要，YAGNI）。
-- widget 要不要顯示一個「are you bot? 😏」小徽章（信任感 vs 純隱形）？
+- **儲存**：site 清單 + 驗證計數用 **selfize/selfbase**（不用 JSON）。
+- **後台登入**：**吃狗糧，套 letmeuse 登入**（不做單一 admin token）。
+- **統計面板**：第一版**做一個簡單的**（每 site 的 challenge 發放數 / verify 成功失敗數 / 近期趨勢）。計數寫進 selfbase。
+- **徽章**：widget **露出「are you bot? 😏」小徽章**（可被宿主用 `data-ayb-badge="off"` 關掉）。
