@@ -212,7 +212,7 @@ const translations = {
   'auth.newPassword': { en: 'New Password', zh: '新密碼' },
   'auth.confirmPassword': { en: 'Confirm Password', zh: '確認密碼' },
   'auth.passwordMismatch': { en: 'Passwords do not match', zh: '兩次密碼不一致' },
-  'auth.passwordTooWeak': { en: 'Min 8 chars, 1 uppercase, 1 lowercase, 1 number', zh: '至少8字元，含大寫、小寫和數字' },
+  'auth.passwordTooWeak': { en: 'Password must be at least 8 characters', zh: '密碼至少需要 8 個字元' },
   'auth.resetPasswordBtn': { en: 'Reset Password', zh: '重設密碼' },
   'auth.passwordResetSuccess': { en: 'Password reset successful!', zh: '密碼重設成功！' },
   'auth.redirectingToLogin': { en: 'Redirecting to login...', zh: '正在跳轉到登入頁面...' },

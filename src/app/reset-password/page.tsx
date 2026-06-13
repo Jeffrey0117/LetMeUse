@@ -26,7 +26,7 @@ function ResetPasswordForm() {
       return
     }
 
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}/.test(password)) {
+    if (password.length < 8) {
       setError(t('auth.passwordTooWeak'))
       return
     }
