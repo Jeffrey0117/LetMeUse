@@ -87,6 +87,11 @@ export function createProfileModal(deps: ProfileModalDeps): void {
         ? (auth.currentUser.avatar.startsWith('http') ? auth.currentUser.avatar : `${baseUrl}${auth.currentUser.avatar}`)
         : ''
       const isVerified = auth.currentUser.emailVerified === true
+      // Only surface verification status for apps that actually enforce it.
+      // Apps with verification off never send a verification email, so showing
+      // "not verified / resend" just makes members wait for an email that
+      // never arrives.
+      const showVerification = auth.requireEmailVerification === true
 
       shadow.innerHTML = `
         <style>${PROFILE_MODAL_STYLES}</style>
@@ -109,12 +114,14 @@ export function createProfileModal(deps: ProfileModalDeps): void {
               <p class="lmu-avatar-name">${auth.currentUser.displayName}</p>
               <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
                 <p class="lmu-avatar-email" style="margin:0;">${auth.currentUser.email}</p>
-                ${isVerified
-                  ? `<span class="lmu-badge lmu-badge-verified">${t('profile.emailVerified')}</span>`
-                  : `<span class="lmu-badge lmu-badge-unverified">${t('profile.emailNotVerified')}</span>`}
+                ${showVerification
+                  ? (isVerified
+                      ? `<span class="lmu-badge lmu-badge-verified">${t('profile.emailVerified')}</span>`
+                      : `<span class="lmu-badge lmu-badge-unverified">${t('profile.emailNotVerified')}</span>`)
+                  : ''}
               </div>
-              ${!isVerified && !verificationSent ? `<a id="lmu-resend-verify" style="font-size:11px;color:${accent};cursor:pointer;margin-top:4px;display:inline-block;">${t('profile.resendVerification')}</a>` : ''}
-              ${verificationSent ? `<span style="font-size:11px;color:#059669;margin-top:4px;display:inline-block;">${t('profile.verificationSent')}</span>` : ''}
+              ${showVerification && !isVerified && !verificationSent ? `<a id="lmu-resend-verify" style="font-size:11px;color:${accent};cursor:pointer;margin-top:4px;display:inline-block;">${t('profile.resendVerification')}</a>` : ''}
+              ${showVerification && verificationSent ? `<span style="font-size:11px;color:#059669;margin-top:4px;display:inline-block;">${t('profile.verificationSent')}</span>` : ''}
             </div>
           </div>
 

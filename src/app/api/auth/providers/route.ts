@@ -29,7 +29,14 @@ export async function GET(request: NextRequest) {
       return config?.enabled && config.clientId && config.clientSecret
     })
 
-    return success({ providers }, 200, origin)
+    // Surface the email-verification policy so the SDK can avoid showing a
+    // "not verified / resend" prompt for apps that never send verification
+    // emails (otherwise members wait for an email that is never sent).
+    return success(
+      { providers, requireEmailVerification: app.requireEmailVerification === true },
+      200,
+      origin
+    )
   } catch (error) {
         return fail('Operation failed', 500, origin)
   }

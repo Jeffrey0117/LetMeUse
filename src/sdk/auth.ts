@@ -32,6 +32,13 @@ export class AuthManager {
   /** Available OAuth providers for this app */
   availableProviders: string[] = []
 
+  /**
+   * Whether this app enforces email verification. When false, the SDK must not
+   * show "not verified / resend" prompts — those apps never send a verification
+   * email, so the prompt only confuses members into waiting for nothing.
+   */
+  requireEmailVerification = false
+
   constructor(appId: string, apiDeps: ApiDeps) {
     this.appId = appId
     this.apiDeps = apiDeps
@@ -178,10 +185,13 @@ export class AuthManager {
     try {
       const data = (await apiGet(this.apiDeps, `/api/auth/providers?app_id=${this.appId}`, '')) as {
         providers: string[]
+        requireEmailVerification?: boolean
       }
       this.availableProviders = data.providers ?? []
+      this.requireEmailVerification = data.requireEmailVerification === true
     } catch {
       this.availableProviders = []
+      this.requireEmailVerification = false
     }
   }
 
