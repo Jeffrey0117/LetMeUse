@@ -51,6 +51,15 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cloudpipe deploy artifacts (generated per-machine — must not dirty the tree,
+# otherwise deploy-guard aborts the deploy with "有 N 個未提交改動")
+.deploy-state.json
+.pkg-hash
+.pm2-ecosystem.json
+
+# stray npm lockfile — this project uses pnpm (pnpm-lock.yaml)
+package-lock.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
