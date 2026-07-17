@@ -8,6 +8,7 @@ import type { ApiDeps } from '../api'
 import { apiPost, apiPutAuth, apiPostAuth } from '../api'
 import { ThemeManager, buildHostThemeVars, getThemeColors } from '../theme'
 import { buildProfileModalStyles } from './styles'
+import { EYE_ICON, EYE_OFF_ICON } from './icons'
 import { createModal } from './login-modal'
 import type { LoginModalDeps } from './login-modal'
 
@@ -51,6 +52,18 @@ export function createProfileModal(deps: ProfileModalDeps): void {
     let pwError = ''
     let pwSuccess = ''
     let savingPw = false
+    let pwVisible: Record<string, boolean> = {}
+
+    function pwField(name: string, extra: string): string {
+      const visible = pwVisible[name] === true
+      return `
+        <div class="lmu-input-wrap">
+          <input class="lmu-input" type="${visible ? 'text' : 'password'}" name="${name}" ${extra} />
+          <button class="lmu-eye-btn" type="button" tabindex="-1" data-pw-toggle="${name}" aria-label="${visible ? t('password.hide') : t('password.show')}">
+            ${visible ? EYE_OFF_ICON : EYE_ICON}
+          </button>
+        </div>`
+    }
 
     let uploadingAvatar = false
     let avatarSuccess = ''
@@ -158,15 +171,15 @@ export function createProfileModal(deps: ProfileModalDeps): void {
               <form id="lmu-pw-form">
                 <div class="lmu-field">
                   <label class="lmu-label">${t('profile.currentPassword')}</label>
-                  <input class="lmu-input" type="password" name="currentPassword" required />
+                  ${pwField('currentPassword', 'required')}
                 </div>
                 <div class="lmu-field">
                   <label class="lmu-label">${t('profile.newPassword')}</label>
-                  <input class="lmu-input" type="password" name="newPassword" required minlength="8" />
+                  ${pwField('newPassword', 'required minlength="8"')}
                 </div>
                 <div class="lmu-field">
                   <label class="lmu-label">${t('profile.confirmPassword')}</label>
-                  <input class="lmu-input" type="password" name="confirmPassword" required minlength="8" />
+                  ${pwField('confirmPassword', 'required minlength="8"')}
                 </div>
                 <div class="lmu-row">
                   <button type="submit" class="lmu-btn-sm lmu-btn-primary" ${savingPw ? 'disabled' : ''}>
@@ -294,6 +307,19 @@ export function createProfileModal(deps: ProfileModalDeps): void {
         pwError = ''
         render()
       })
+      // Toggle password visibility in place (re-render would wipe typed values)
+      shadow.querySelectorAll('[data-pw-toggle]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const name = (btn as HTMLElement).dataset.pwToggle ?? ''
+          const visible = pwVisible[name] !== true
+          pwVisible = { ...pwVisible, [name]: visible }
+          const input = shadow.querySelector(`input[name="${name}"]`) as HTMLInputElement | null
+          if (input) input.type = visible ? 'text' : 'password'
+          btn.innerHTML = visible ? EYE_OFF_ICON : EYE_ICON
+          btn.setAttribute('aria-label', visible ? t('password.hide') : t('password.show'))
+        })
+      })
+
       const pwForm = shadow.getElementById('lmu-pw-form') as HTMLFormElement | null
       pwForm?.addEventListener('submit', async (e) => {
         e.preventDefault()

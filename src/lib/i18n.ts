@@ -208,6 +208,8 @@ const translations = {
   'auth.loginTitle': { en: 'Sign in to your account', zh: '登入您的帳號' },
   'auth.registerTitle': { en: 'Create a new account', zh: '建立新帳號' },
   'auth.forgotPassword': { en: 'Forgot password?', zh: '忘記密碼？' },
+  'auth.showPassword': { en: 'Show password', zh: '顯示密碼' },
+  'auth.hidePassword': { en: 'Hide password', zh: '隱藏密碼' },
   'auth.resetPasswordTitle': { en: 'Set a new password', zh: '設定新密碼' },
   'auth.newPassword': { en: 'New Password', zh: '新密碼' },
   'auth.confirmPassword': { en: 'Confirm Password', zh: '確認密碼' },

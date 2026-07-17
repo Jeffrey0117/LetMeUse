@@ -131,6 +131,39 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       color: var(--lmu-subtext);
       opacity: 0.6;
     }
+    .lmu-input-wrap {
+      position: relative;
+    }
+    .lmu-input-wrap .lmu-input {
+      padding-right: 44px;
+    }
+    .lmu-eye-btn {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      color: var(--lmu-subtext);
+      opacity: 0.7;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .lmu-eye-btn:hover { opacity: 1; color: var(--lmu-text); }
+    .lmu-eye-btn svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
     .lmu-btn {
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -347,6 +380,18 @@ export function buildProfileModalStyles(accent: string, hostThemeVars: string): 
     }
     .lmu-input:focus { border-color: ${accent}; box-shadow: 0 0 0 3px ${accent}22; }
     .lmu-input:disabled { opacity: 0.6; cursor: not-allowed; }
+    .lmu-input-wrap { position: relative; }
+    .lmu-input-wrap .lmu-input { padding-right: 42px; }
+    .lmu-eye-btn {
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      position: absolute; top: 0; right: 0; width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; padding: 0; margin: 0;
+      cursor: pointer; color: var(--lmu-subtext); opacity: 0.7;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .lmu-eye-btn:hover { opacity: 1; color: var(--lmu-text); }
+    .lmu-eye-btn svg { width: 18px; height: 18px; display: block; }
     .lmu-row { display: flex; gap: 8px; margin-top: 10px; }
     .lmu-btn-sm {
       height: 38px; padding: 0 16px; border-radius: 8px;

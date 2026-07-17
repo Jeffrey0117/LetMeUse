@@ -8,6 +8,7 @@ import type { ApiDeps } from '../api'
 import { apiPost } from '../api'
 import { ThemeManager, buildHostThemeVars, getThemeColors } from '../theme'
 import { buildModalStyles } from './styles'
+import { EYE_ICON, EYE_OFF_ICON } from './icons'
 
 export interface LoginModalDeps {
   appId: string
@@ -32,6 +33,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
     let errorMsg = ''
     let successMsg = ''
     let loading = false
+    let showPassword = false
 
     // Create host element + shadow root for style isolation
     const host = document.createElement('div')
@@ -143,7 +145,12 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
                 <label class="lmu-label">${t('label.password')} <span class="lmu-req">*</span></label>
                 ${isLogin ? `<a id="lmu-forgot-pw" class="lmu-label-link">${t('link.forgotPassword')}</a>` : ''}
               </div>
-              <input class="lmu-input" type="password" name="password" id="lmu-password-input" placeholder="${isLogin ? t('placeholder.password') : t('placeholder.passwordNew')}" required minlength="${isLogin ? 1 : 8}" />
+              <div class="lmu-input-wrap">
+                <input class="lmu-input" type="${showPassword ? 'text' : 'password'}" name="password" id="lmu-password-input" placeholder="${isLogin ? t('placeholder.password') : t('placeholder.passwordNew')}" required minlength="${isLogin ? 1 : 8}" />
+                <button class="lmu-eye-btn" type="button" id="lmu-toggle-password" tabindex="-1" aria-label="${showPassword ? t('password.hide') : t('password.show')}">
+                  ${showPassword ? EYE_OFF_ICON : EYE_ICON}
+                </button>
+              </div>
             </div>
             ${!isLogin ? `<p class="lmu-terms">${t('register.terms')}</p>` : ''}
             <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
@@ -187,6 +194,18 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
         errorMsg = ''
         successMsg = ''
         render()
+      })
+
+      // Toggle password visibility in place (re-render would wipe typed values)
+      shadow.getElementById('lmu-toggle-password')?.addEventListener('click', () => {
+        showPassword = !showPassword
+        const pwInput = shadow.getElementById('lmu-password-input') as HTMLInputElement | null
+        const toggleBtn = shadow.getElementById('lmu-toggle-password')
+        if (pwInput) pwInput.type = showPassword ? 'text' : 'password'
+        if (toggleBtn) {
+          toggleBtn.innerHTML = showPassword ? EYE_OFF_ICON : EYE_ICON
+          toggleBtn.setAttribute('aria-label', showPassword ? t('password.hide') : t('password.show'))
+        }
       })
 
       shadow.getElementById('lmu-switch-mode')?.addEventListener('click', () => {

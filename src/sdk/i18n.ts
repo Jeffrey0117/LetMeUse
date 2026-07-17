@@ -14,6 +14,8 @@ const i18n: Record<string, Record<string, string>> = {
   'placeholder.password': { en: 'Enter your password', zh: '請輸入密碼' },
   'placeholder.passwordNew': { en: 'At least 8 characters', zh: '密碼長度最低 8 位' },
   'placeholder.displayName': { en: 'Your name', zh: '請輸入顯示名稱' },
+  'password.show': { en: 'Show password', zh: '顯示密碼' },
+  'password.hide': { en: 'Hide password', zh: '隱藏密碼' },
   'btn.login': { en: 'Sign In Now', zh: '立即登入' },
   'btn.register': { en: 'Sign Up Now', zh: '立即註冊' },
   'switch.toRegisterPrompt': { en: "Don't have an account yet?", zh: '還沒有帳號？' },
