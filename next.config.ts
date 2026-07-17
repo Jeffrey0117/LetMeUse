@@ -7,14 +7,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Un-versioned SDK loader: keep browser cache short so updates
-        // propagate quickly. Without an explicit Cache-Control, Cloudflare
-        // applies its 4-hour default browser TTL and sites serve stale SDK.
+        // Un-versioned SDK loader: no-cache = browsers revalidate via ETag
+        // (cheap 304) so updates propagate instantly. A small max-age doesn't
+        // work here: Cloudflare's zone Browser Cache TTL (4h) overrides any
+        // origin max-age smaller than itself, but passes no-cache through.
         source: "/letmeuse.js",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=300, must-revalidate",
+            value: "no-cache",
           },
         ],
       },
@@ -23,7 +24,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=300, must-revalidate",
+            value: "no-cache",
           },
         ],
       },
