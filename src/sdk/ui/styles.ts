@@ -97,6 +97,23 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       white-space: nowrap;
     }
     .lmu-label-link:hover { text-decoration: underline; }
+    .lmu-remember {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--lmu-subtext);
+      cursor: pointer;
+      user-select: none;
+      margin: 0 0 14px 0;
+    }
+    .lmu-remember input {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      accent-color: ${accent};
+      cursor: pointer;
+    }
     .lmu-terms {
       font-size: 12px;
       color: var(--lmu-subtext);

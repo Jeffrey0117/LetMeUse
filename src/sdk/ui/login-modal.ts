@@ -35,6 +35,25 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
     let loading = false
     let showPassword = false
 
+    // 表單值放 state — render() 重寫 shadow.innerHTML 會清空欄位,
+    // 失敗重繪時把這些值塞回 value,使用者不用整份重打。
+    let savedEmail = ''
+    let savedPassword = ''
+    let savedDisplayName = ''
+    let rememberMe = false
+    const rememberKey = `lmu_${appId}_remembered_email`
+    try {
+      const remembered = localStorage.getItem(rememberKey)
+      if (remembered) {
+        savedEmail = remembered
+        rememberMe = true
+      }
+    } catch { /* localStorage 不可用（隱私模式等）→ 純不記住 */ }
+
+    // value 屬性專用 escape（防 email/密碼含 " 或 < 弄壞標記）
+    const escAttr = (s: string): string =>
+      s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+
     // Create host element + shadow root for style isolation
     const host = document.createElement('div')
     host.id = 'lmu-auth-host'
@@ -80,7 +99,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
               <form id="lmu-forgot-form">
                 <div class="lmu-field">
                   <label class="lmu-label">${t('label.email')}</label>
-                  <input class="lmu-input" type="email" name="email" required />
+                  <input class="lmu-input" type="email" name="email" value="${escAttr(savedEmail)}" required />
                 </div>
                 <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
                   ${loading ? t('msg.loading') : t('forgot.send')}
@@ -105,6 +124,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
           e.preventDefault()
           const fd = new FormData(forgotForm)
           const email = fd.get('email') as string
+          savedEmail = email
           loading = true
           errorMsg = ''
           render()
@@ -133,12 +153,12 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
             ${!isLogin ? `
               <div class="lmu-field">
                 <label class="lmu-label">${t('label.displayName')} <span class="lmu-req">*</span></label>
-                <input class="lmu-input" type="text" name="displayName" placeholder="${t('placeholder.displayName')}" required />
+                <input class="lmu-input" type="text" name="displayName" placeholder="${t('placeholder.displayName')}" value="${escAttr(savedDisplayName)}" required />
               </div>
             ` : ''}
             <div class="lmu-field">
               <label class="lmu-label">${t('label.email')} <span class="lmu-req">*</span></label>
-              <input class="lmu-input" type="email" name="email" placeholder="${t('placeholder.email')}" required />
+              <input class="lmu-input" type="email" name="email" placeholder="${t('placeholder.email')}" value="${escAttr(savedEmail)}" required />
             </div>
             <div class="lmu-field">
               <div class="lmu-label-row">
@@ -146,12 +166,18 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
                 ${isLogin ? `<a id="lmu-forgot-pw" class="lmu-label-link">${t('link.forgotPassword')}</a>` : ''}
               </div>
               <div class="lmu-input-wrap">
-                <input class="lmu-input" type="${showPassword ? 'text' : 'password'}" name="password" id="lmu-password-input" placeholder="${isLogin ? t('placeholder.password') : t('placeholder.passwordNew')}" required minlength="${isLogin ? 1 : 8}" />
+                <input class="lmu-input" type="${showPassword ? 'text' : 'password'}" name="password" id="lmu-password-input" placeholder="${isLogin ? t('placeholder.password') : t('placeholder.passwordNew')}" value="${escAttr(savedPassword)}" required minlength="${isLogin ? 1 : 8}" />
                 <button class="lmu-eye-btn" type="button" id="lmu-toggle-password" tabindex="-1" aria-label="${showPassword ? t('password.hide') : t('password.show')}">
                   ${showPassword ? EYE_OFF_ICON : EYE_ICON}
                 </button>
               </div>
             </div>
+            ${isLogin ? `
+              <label class="lmu-remember">
+                <input type="checkbox" name="remember" ${rememberMe ? 'checked' : ''} />
+                <span>${t('label.rememberMe')}</span>
+              </label>
+            ` : ''}
             ${!isLogin ? `<p class="lmu-terms">${t('register.terms')}</p>` : ''}
             <button class="lmu-btn" type="submit" ${loading ? 'disabled' : ''}>
               ${loading ? t('msg.loading') : (isLogin ? t('btn.login') : t('btn.register'))}
@@ -224,6 +250,11 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
         const email = formData.get('email') as string
         const password = formData.get('password') as string
 
+        savedEmail = email
+        savedPassword = password
+        if (!isLogin) savedDisplayName = (formData.get('displayName') as string) ?? ''
+        if (isLogin) rememberMe = formData.get('remember') !== null
+
         loading = true
         errorMsg = ''
         render()
@@ -243,6 +274,11 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
               email,
               password,
             })) as { user: LetMeUseUser; accessToken: string; refreshToken: string }
+
+            try {
+              if (rememberMe) localStorage.setItem(rememberKey, email)
+              else localStorage.removeItem(rememberKey)
+            } catch { /* localStorage 不可用就算了 */ }
 
             auth.storeTokens(data.accessToken, data.refreshToken)
             auth.currentUser = data.user
@@ -275,9 +311,11 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
     render()
     document.body.appendChild(host)
 
-    // Focus first input
+    // Focus first input（帳號已自動帶入時直接跳到密碼欄）
     setTimeout(() => {
-      const firstInput = shadow.querySelector('input') as HTMLInputElement | null
-      firstInput?.focus()
+      const target = (savedEmail
+        ? shadow.getElementById('lmu-password-input')
+        : shadow.querySelector('input')) as HTMLInputElement | null
+      target?.focus()
     }, 50)
 }

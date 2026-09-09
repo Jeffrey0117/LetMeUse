@@ -35,6 +35,7 @@ const i18n: Record<string, Record<string, string>> = {
   'oauth.google': { en: 'Google', zh: 'Google' },
   'oauth.github': { en: 'GitHub', zh: 'GitHub' },
   'link.forgotPassword': { en: 'Forgot password?', zh: '忘記密碼？' },
+  'label.rememberMe': { en: 'Remember me', zh: '記住帳號' },
   'error.passwordTooShort': { en: 'Password must be at least 8 characters', zh: '密碼至少需要 8 個字元' },
   'forgot.title': { en: 'Reset Password', zh: '重設密碼' },
   'forgot.description': { en: 'Enter your email to receive a reset link.', zh: '輸入信箱以收取重設連結。' },
