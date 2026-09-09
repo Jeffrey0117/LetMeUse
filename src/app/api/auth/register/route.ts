@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
       origin
     )
   } catch (error) {
-        return fail('Registration failed', 500, origin)
+    console.error('[auth/register] unhandled error:', error)
+    return fail('Registration failed', 500, origin)
   }
 }

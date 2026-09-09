@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
 
     return success({ accessToken, refreshToken: newRefreshTokenJWT }, 200, origin)
   } catch (error) {
-        return fail('Token refresh failed', 500, origin)
+    console.error('[auth/refresh] unhandled error:', error)
+    return fail('Token refresh failed', 500, origin)
   }
 }

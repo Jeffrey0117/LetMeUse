@@ -109,6 +109,8 @@ export async function POST(request: NextRequest) {
       origin
     )
   } catch (error) {
+    // 一定要留噪音:2026-09-09 全站登入 500 事故,catch 靜默吞錯讓根因追了一下午
+    console.error('[auth/login] unhandled error:', error)
     return fail('Login failed', 500, origin)
   }
 }
