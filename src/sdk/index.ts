@@ -10,7 +10,7 @@
  *   data-mode      — "modal" (default) or "redirect"
  */
 
-import type { Locale, ThemeMode, SdkMode, AuthCallback, LetMeUseUser } from './types'
+import type { Locale, ThemeMode, SdkMode, AuthCallback, LetMeUseUser, TokenRefreshCallback } from './types'
 import { createTranslator } from './i18n'
 import { ThemeManager } from './theme'
 import { AuthManager } from './auth'
@@ -133,6 +133,15 @@ const letmeuse = {
   },
   onAuthChange(cb: AuthCallback): () => void {
     return authManager.onAuthChange(cb)
+  },
+  /**
+   * Fired after every SUCCESSFUL silent token refresh, with the new access
+   * token. For hosts that mirror the token elsewhere (cookie for SSR, etc.) —
+   * without this, a tab left open past the 4h access-token life keeps serving
+   * its stale copy even though the SDK quietly rotated the real one.
+   */
+  onTokenRefresh(cb: TokenRefreshCallback): () => void {
+    return authManager.onTokenRefresh(cb)
   },
   openAdmin() {
     window.open(`${baseUrl}/admin`, '_blank')

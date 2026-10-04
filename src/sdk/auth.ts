@@ -2,7 +2,7 @@
  * Token storage, refresh scheduling, and auth state management
  */
 
-import type { LetMeUseUser, AuthCallback, AuthEvent } from './types'
+import type { LetMeUseUser, AuthCallback, AuthEvent, TokenRefreshCallback } from './types'
 import type { ApiDeps } from './api'
 import { apiPost, apiGet, ApiError } from './api'
 
@@ -25,6 +25,7 @@ export class AuthManager {
   private _currentUser: LetMeUseUser | null = null
   private _ready = false
   private readonly callbacks: AuthCallback[] = []
+  private readonly refreshCallbacks: TokenRefreshCallback[] = []
   private refreshTimer: ReturnType<typeof setTimeout> | null = null
   private _readyResolve!: (user: LetMeUseUser | null) => void
   private readonly _readyPromise: Promise<LetMeUseUser | null>
@@ -103,6 +104,29 @@ export class AuthManager {
     }
   }
 
+  /**
+   * 訂閱「靜默 refresh 成功」— 背景換到新 access token 時帶著新 token 回呼。
+   * onAuthChange 刻意不發這個事件 (會害既有 app 每 4 小時重畫一輪);
+   * 需要把 token 同步到別處的 (cookie、cross-tab) 自己訂這個。
+   */
+  onTokenRefresh(cb: TokenRefreshCallback): () => void {
+    this.refreshCallbacks.push(cb)
+    return () => {
+      const i = this.refreshCallbacks.indexOf(cb)
+      if (i !== -1) this.refreshCallbacks.splice(i, 1)
+    }
+  }
+
+  private fireRefreshCallbacks(accessToken: string): void {
+    for (const cb of this.refreshCallbacks) {
+      try {
+        cb(accessToken)
+      } catch {
+        // ignore callback errors
+      }
+    }
+  }
+
   onAuthChange(cb: AuthCallback): () => void {
     this.callbacks.push(cb)
     if (this._ready) {
@@ -162,6 +186,7 @@ export class AuthManager {
       }
       this.storeTokens(data.accessToken, data.refreshToken)
       this.scheduleRefresh()
+      this.fireRefreshCallbacks(data.accessToken)
     } catch (err) {
       if (isAuthRejection(err)) {
         this.clearTokens()

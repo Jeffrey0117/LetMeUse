@@ -16,6 +16,9 @@ export type AuthEvent = 'init' | 'login' | 'logout' | 'refresh_failed'
 
 export type AuthCallback = (user: LetMeUseUser | null, event?: AuthEvent) => void
 
+/** Fired after every SUCCESSFUL silent token refresh, with the new access token. */
+export type TokenRefreshCallback = (accessToken: string) => void
+
 export type Locale = 'en' | 'zh'
 
 export type ThemeMode = 'light' | 'dark' | 'auto'
