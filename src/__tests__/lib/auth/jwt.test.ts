@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { generateKeyPair, exportPKCS8, SignJWT } from 'jose'
 
 vi.mock('@/lib/rbac', () => ({
   getPermissionsForRole: vi.fn().mockResolvedValue(['read']),
@@ -6,6 +7,14 @@ vi.mock('@/lib/rbac', () => ({
 
 import { signAccessToken, verifyAccessToken, signRefreshTokenJWT, decodeJwtPayloadSegment } from '@/lib/auth/jwt'
 import type { App, AuthUser } from '@/lib/auth-models'
+
+// 2026-10-30 起 access token 簽發/驗證都是 ES256 — 測試環境先備好簽章金鑰
+// (keys.ts 的 loadSigningKeys 第一次被呼叫時才讀 env,beforeAll 內設定來得及)
+beforeAll(async () => {
+  const { privateKey } = await generateKeyPair('ES256', { extractable: true })
+  process.env.LETMEUSE_JWT_PRIVATE_KEY_B64 = Buffer.from(await exportPKCS8(privateKey)).toString('base64')
+  process.env.LETMEUSE_SIGN_ALG = 'ES256'
+})
 
 const mockApp: App = {
   id: 'app_test123',
@@ -45,13 +54,29 @@ describe('jwt', () => {
     })
   })
 
-  describe('verifyAccessToken with wrong secret', () => {
+  describe('tampered token', () => {
     it('throws an error', async () => {
       const token = await signAccessToken(mockUser, mockApp)
+      const [h, p, s] = token.split('.')
+      const evilPayload = Buffer.from(
+        JSON.stringify({ ...JSON.parse(Buffer.from(p, 'base64url').toString()), role: 'admin' })
+      ).toString('base64url')
 
-      await expect(
-        verifyAccessToken(token, 'wrong-secret-key-that-is-also-long!!')
-      ).rejects.toThrow()
+      await expect(verifyAccessToken(`${h}.${evilPayload}.${s}`, mockApp.secret)).rejects.toThrow()
+    })
+  })
+
+  describe('🔒 HS256 偽造必拒(pokkit 事件回歸)', () => {
+    it('rejects an HS256 token even when signed with the real app secret', async () => {
+      // 攻擊劇本:app secret 外洩 → 自簽 HS256 冒充任意用戶。驗證端必須只認 ES256。
+      const forged = await new SignJWT({ email: 'victim@example.com', app: mockApp.id, role: 'admin' })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setSubject('usr_victim')
+        .setIssuedAt()
+        .setExpirationTime('4h')
+        .sign(new TextEncoder().encode(mockApp.secret))
+
+      await expect(verifyAccessToken(forged, mockApp.secret)).rejects.toThrow()
     })
   })
 

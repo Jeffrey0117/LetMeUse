@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify, decodeProtectedHeader } from 'jose'
+import { SignJWT, jwtVerify } from 'jose'
 import type { App, AuthUser } from '../auth-models'
 import { getPermissionsForRole } from '../rbac'
 import { loadSigningKeys } from './keys'
@@ -79,22 +79,14 @@ export async function signRefreshTokenJWT(
 
 export async function verifyAccessToken(
   token: string,
-  appSecret: string
+  _appSecret: string
 ): Promise<AccessTokenPayload> {
-  // 過渡期兩種都收: header alg=ES256 → 用 JWKS 公鑰驗; 否則 HS256 → 用 app secret 驗。
-  // 🔒 兩條都「鎖死 algorithm」, 不讓攻擊者在 header 亂換 alg (confusion / none)。
-  let alg = 'HS256'
-  try {
-    alg = (decodeProtectedHeader(token).alg as string) || 'HS256'
-  } catch {
-    // 解不開 header → 當 HS256 走下面, jwtVerify 會擋
-  }
-  if (alg === 'ES256') {
-    const keys = await loadSigningKeys()
-    if (!keys) throw new Error('ES256 token but no signing keys configured')
-    const { payload } = await jwtVerify(token, keys.publicKey, { algorithms: ['ES256'] })
-    return payload as unknown as AccessTokenPayload
-  }
-  const { payload } = await jwtVerify(token, getSecretKey(appSecret), { algorithms: ['HS256'] })
+  // 🔒 2026-10-30 資安批次:access token 只收 ES256(簽發端已全面 ES256 多時)。
+  // HS256 過渡路徑廢除 — app secret 一洩就能自簽任意 sub 偽造任何用戶
+  // (pokkit 事件根因)。refresh token 不走這裡(redeem 時查儲存比對,非驗簽)。
+  // _appSecret 參數保留只為呼叫端簽名相容,不再使用。
+  const keys = await loadSigningKeys()
+  if (!keys) throw new Error('ES256 signing keys not configured (LETMEUSE_JWT_PRIVATE_KEY_B64)')
+  const { payload } = await jwtVerify(token, keys.publicKey, { algorithms: ['ES256'] })
   return payload as unknown as AccessTokenPayload
 }
