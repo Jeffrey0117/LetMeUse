@@ -5,6 +5,7 @@ import { generateUserId, generateRefreshTokenId } from '@/lib/id'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
 import { hashToken } from '@/lib/auth/token-hash'
 import { corsResponse, success, fail } from '@/lib/api-result'
+import { canRedeemIntoExistingAccount } from '@/lib/auth/sso-policy'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { consumeSsoCode } from '@/lib/auth/sso-codes'
 import { createSession } from '@/lib/session'
@@ -50,6 +51,17 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString()
     let user = await findUserByAppAndEmail<AuthUser>(USERS_FILE, appId, sourceUser.email)
     let created = false
+
+    if (user && !canRedeemIntoExistingAccount(sourceUser)) {
+      writeAuditLog({
+        action: 'user.login',
+        actorId: sourceUser.id,
+        actorEmail: sourceUser.email,
+        appId: targetApp.id,
+        details: { sso: true, sourceAppId: item.sourceAppId, blocked: 'source-email-unverified' },
+      })
+      return fail('Email not verified — 請先驗證信箱再使用跨站登入', 403, origin)
+    }
 
     if (!user) {
       const sourceAvatar = (sourceUser as AuthUser & { avatarUrl?: string }).avatarUrl
