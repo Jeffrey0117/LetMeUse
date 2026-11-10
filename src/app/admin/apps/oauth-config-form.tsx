@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 
+// Client Secret 不是登入密碼:用文字欄位 + 遮罩,瀏覽器才不會把管理員的登入帳密
+// 填進「Client ID / Client Secret」這一對欄位(見 @/lib/secret-input)。
+import { SECRET_INPUT_CLASS, SECRET_INPUT_PROPS } from '@/lib/secret-input'
+
 interface OAuthConfig {
   clientId: string
   clientSecret: string
@@ -82,11 +86,11 @@ export function OAuthEditForm({ app, saving, onSave, onCancel }: OAuthEditFormPr
             className={inputClass}
           />
           <input
-            type="password"
+            {...SECRET_INPUT_PROPS}
             placeholder="Client Secret"
             value={googleClientSecret}
             onChange={(e) => setGoogleClientSecret(e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${SECRET_INPUT_CLASS}`}
           />
         </div>
       </div>
@@ -114,11 +118,11 @@ export function OAuthEditForm({ app, saving, onSave, onCancel }: OAuthEditFormPr
             className={inputClass}
           />
           <input
-            type="password"
+            {...SECRET_INPUT_PROPS}
             placeholder="Client Secret"
             value={githubClientSecret}
             onChange={(e) => setGithubClientSecret(e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${SECRET_INPUT_CLASS}`}
           />
         </div>
       </div>

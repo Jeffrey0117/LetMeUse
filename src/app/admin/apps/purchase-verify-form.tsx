@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 
+// Provider Secret 是 bearer token 不是登入密碼(見 @/lib/secret-input)。
+import { SECRET_INPUT_CLASS, SECRET_INPUT_PROPS } from '@/lib/secret-input'
+
 export interface PurchaseVerifyConfig {
   enabled: boolean
   providerUrl: string
@@ -70,11 +73,11 @@ export function PurchaseVerifyEditForm({ app, saving, onSave, onCancel }: Purcha
           <div>
             <label className="text-xs text-zinc-500 mb-1 block">Provider Secret (Bearer token)</label>
             <input
-              type="password"
+              {...SECRET_INPUT_PROPS}
               placeholder="Bearer token for provider"
               value={providerSecret}
               onChange={(e) => setProviderSecret(e.target.value)}
-              className={inputClass}
+              className={`${inputClass} ${SECRET_INPUT_CLASS}`}
             />
           </div>
           <div>
