@@ -7,7 +7,7 @@ import { verifyPassword, DUMMY_HASH } from '@/lib/auth/password'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
 import { hashToken } from '@/lib/auth/token-hash'
 import { corsResponse, success, fail } from '@/lib/api-result'
-import { checkRateLimit, recordFailure, resetFailures, rateLimitResponse, RATE_LIMITS, checkRateLimitByKey, recordFailureByKey, resetFailuresByKey } from '@/lib/rate-limit'
+import { checkRateLimit, recordFailure, resetFailures, rateLimitResponse, RATE_LIMITS, checkRateLimitByKey, recordFailureByKey, resetFailuresByKey, getClientIp } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
 import { writeAuditLog } from '@/lib/audit'
 import { createSession } from '@/lib/session'
@@ -35,9 +35,17 @@ export async function POST(request: NextRequest) {
 
     const { appId, email, password } = parsed.data
 
-    // 🔒 per-account 撞庫鎖 — 鎖跟著「帳號」走, 攻擊者換 IP / 偽造 XFF 也繞不過單一帳號的失敗鎖
+    // 🔒 兩層帳號鎖:
+    //  1. 帳號 + 來源位址:錯 5 次鎖 15 分鐘 — 擋單一來源猜密碼,但別人猜錯不會鎖到本人。
+    //  2. 整個帳號:錯 20 次鎖 15 分鐘 — 換 IP 分散猜也有上限 (撞庫防護仍在)。
+    // 原本只有「整個帳號錯 5 次就鎖」,任何人都能用 5 個亂猜的密碼把別人鎖在外面。
     const acctKey = `login-acct:${appId}:${email.toLowerCase()}`
-    const acctCheck = await checkRateLimitByKey(acctKey, RATE_LIMITS.login)
+    const acctIpKey = `${acctKey}:${getClientIp(request)}`
+    const acctIpCheck = await checkRateLimitByKey(acctIpKey, RATE_LIMITS.login)
+    if (!acctIpCheck.allowed) {
+      return rateLimitResponse(acctIpCheck.retryAfterSeconds ?? 900, origin)
+    }
+    const acctCheck = await checkRateLimitByKey(acctKey, RATE_LIMITS.loginAccount)
     if (!acctCheck.allowed) {
       return rateLimitResponse(acctCheck.retryAfterSeconds ?? 900, origin)
     }
@@ -54,7 +62,8 @@ export async function POST(request: NextRequest) {
 
     if (!user || !valid) {
       await recordFailure(request, 'login', RATE_LIMITS.login)
-      await recordFailureByKey(acctKey, RATE_LIMITS.login)
+      await recordFailureByKey(acctIpKey, RATE_LIMITS.login)
+      await recordFailureByKey(acctKey, RATE_LIMITS.loginAccount)
       writeAuditLog({ action: 'user.login_failed', actorId: user?.id ?? 'unknown', actorEmail: user?.email, appId, details: user ? undefined : { email }, ip: request.headers.get('x-forwarded-for') ?? undefined })
       return fail('Invalid credentials', 401, origin)
     }
@@ -69,6 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     await resetFailures(request, 'login')
+    await resetFailuresByKey(acctIpKey)
     await resetFailuresByKey(acctKey)
 
     const now = new Date().toISOString()

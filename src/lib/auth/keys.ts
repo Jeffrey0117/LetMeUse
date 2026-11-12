@@ -28,7 +28,9 @@ export function loadSigningKeys(): Promise<SigningKeys | null> {
       const kid = await calculateJwkThumbprint(pub)
       const publicKey = (await importJWK(pub, 'ES256')) as CryptoKey
       return { privateKey, publicKey, publicJwk: { ...pub, use: 'sig', alg: 'ES256', kid }, kid }
-    } catch {
+    } catch (error) {
+      // Never swallow this: without the key no token can be issued at all.
+      console.error('[auth/keys] LETMEUSE_JWT_PRIVATE_KEY_B64 is set but could not be loaded:', error)
       return null
     }
   })()

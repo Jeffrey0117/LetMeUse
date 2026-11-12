@@ -65,6 +65,14 @@ export async function authenticateRequest(
     }
 
     const payload = await verifyAccessToken(token, app.secret)
+
+    // The token says who it was issued to; the database says whether that
+    // account may still act. Without this, disabling someone took up to 4h.
+    const account = await getById<AuthUser>(USERS_FILE, payload.sub)
+    if (!account || account.disabled || account.appId !== app.id) {
+      return fail('Invalid or expired token', 401, origin)
+    }
+
     return { payload, app }
   } catch {
     return fail('Invalid or expired token', 401, origin)

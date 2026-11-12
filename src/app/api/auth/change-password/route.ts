@@ -1,8 +1,12 @@
 import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import type { AuthUser, App } from '@/lib/auth-models'
-import { getById, update, USERS_FILE, APPS_FILE } from '@/lib/storage'
+import type { AuthUser, App, RefreshToken } from '@/lib/auth-models'
+import { getById, update, create, USERS_FILE, APPS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
+import { generateRefreshTokenId } from '@/lib/id'
+import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
+import { hashToken } from '@/lib/auth/token-hash'
+import { createSession, revokeAllUserSessions, revokeAllUserRefreshTokens } from '@/lib/session'
 import { verifyPassword, hashPassword } from '@/lib/auth/password'
 import { authenticateRequest } from '@/lib/auth/middleware'
 import { corsResponse, success, fail } from '@/lib/api-result'
@@ -77,7 +81,42 @@ export async function POST(request: NextRequest) {
       ip: request.headers.get('x-forwarded-for') ?? undefined,
     })
 
-    return success({ message: 'Password changed successfully' }, 200, origin)
+    // A password change is how someone locks out whoever else got in: end
+    // every existing session, then hand THIS caller a fresh pair so they stay
+    // signed in. (Clients that ignore the new pair are simply asked to sign in
+    // again when their current access token runs out.)
+    await revokeAllUserRefreshTokens(user.id)
+    await revokeAllUserSessions(user.id)
+
+    if (!app) {
+      return success({ message: 'Password changed successfully' }, 200, origin)
+    }
+
+    const fresh = { ...user, passwordHash, updatedAt: now }
+    const accessToken = await signAccessToken(fresh, app)
+    const refreshTokenJWT = await signRefreshTokenJWT(fresh, app)
+    const refreshToken: RefreshToken = {
+      id: generateRefreshTokenId(),
+      userId: user.id,
+      appId: app.id,
+      tokenHash: hashToken(refreshTokenJWT),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: now,
+    }
+    await create<RefreshToken>(REFRESH_TOKENS_FILE, refreshToken)
+    await createSession({
+      userId: user.id,
+      appId: app.id,
+      refreshTokenId: refreshToken.id,
+      ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined,
+      userAgent: request.headers.get('user-agent') ?? undefined,
+    })
+
+    return success(
+      { message: 'Password changed successfully', accessToken, refreshToken: refreshTokenJWT },
+      200,
+      origin
+    )
   } catch (error) {
         return fail('Password change failed', 500, origin)
   }

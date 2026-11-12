@@ -49,16 +49,17 @@ export async function signAccessToken(
     // SDK 到期前 5 分自動 refresh (對使用者透明); refresh route 擋 disabled/已登出 = 真撤銷。
     .setExpirationTime('4h')
 
-  // 🔑 Phase 2 開關: LETMEUSE_SIGN_ALG=ES256 → 非對稱簽 (接入方走 JWKS 公鑰驗, 不靠共用 secret)。
-  // 預設 (未設) 仍 HS256 → 不動現有行為。
-  if (process.env.LETMEUSE_SIGN_ALG === 'ES256') {
-    const keys = await loadSigningKeys()
-    if (keys) {
-      return builder.setProtectedHeader({ alg: 'ES256', kid: keys.kid }).sign(keys.privateKey)
-    }
-    // 沒設金鑰 → 退回 HS256 (不讓登入掛掉)
+  // 🔑 只簽 ES256。以前金鑰載不起來會無聲退回 HS256「不讓登入掛掉」,但本服務和所有
+  // 接入方都只收 ES256,退回去的 token 沒有任何人會收 —— 登入其實還是掛了,只是零線索。
+  // 現在直接丟錯,log 會指名缺哪個設定。
+  const keys = await loadSigningKeys()
+  if (!keys) {
+    throw new Error(
+      '[auth/jwt] ES256 signing key unavailable: set LETMEUSE_JWT_PRIVATE_KEY_B64 (base64 PKCS#8 EC P-256). ' +
+        'Refusing to fall back to HS256.'
+    )
   }
-  return builder.setProtectedHeader({ alg: 'HS256' }).sign(getSecretKey(app.secret))
+  return builder.setProtectedHeader({ alg: 'ES256', kid: keys.kid }).sign(keys.privateKey)
 }
 
 export async function signRefreshTokenJWT(

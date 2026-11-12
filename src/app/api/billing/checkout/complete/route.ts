@@ -34,17 +34,19 @@ export async function POST(request: NextRequest) {
       return fail('Checkout session not found', 404, origin)
     }
 
-    // Only the app's own server may mark a session paid. The session ID is in
-    // the customer's checkout link, so it cannot double as the credential.
-    if (!appId || !appSecret) {
-      return fail('App credentials required', 401, origin)
-    }
-    const app = await getById<App>(APPS_FILE, appId)
-    if (!app || !safeEqual(app.secret, appSecret)) {
-      return fail('Invalid app credentials', 401, origin)
-    }
-    if (session.appId !== appId) {
-      return fail('Session does not belong to this app', 403, origin)
+    // ⚠️ DEMO MODE: with no credentials, the hosted checkout page's "Pay"
+    // button completes the session WITHOUT any money moving. canweback's
+    // paywall runs on this today, so it stays until a real provider is wired
+    // in — but anything gated on it is effectively free to whoever clicks.
+    if (appId && appSecret) {
+      // Server-to-server verification
+      const app = await getById<App>(APPS_FILE, appId)
+      if (!app || !safeEqual(app.secret, appSecret)) {
+        return fail('Invalid app credentials', 401, origin)
+      }
+      if (session.appId !== appId) {
+        return fail('Session does not belong to this app', 403, origin)
+      }
     }
 
     const completed = await completeCheckoutSession(sessionId)

@@ -342,7 +342,15 @@ export function createProfileModal(deps: ProfileModalDeps): void {
         render()
 
         try {
-          await apiPostAuth(apiDeps, '/api/auth/change-password', { currentPassword, newPassword }, token)
+          const changed = (await apiPostAuth(apiDeps, '/api/auth/change-password', { currentPassword, newPassword }, token)) as {
+            accessToken?: string
+            refreshToken?: string
+          }
+          // The server ended every session and issued this device a new one.
+          if (changed.accessToken && changed.refreshToken) {
+            auth.storeTokens(changed.accessToken, changed.refreshToken)
+            auth.scheduleRefresh()
+          }
           showPwForm = false
           savingPw = false
           pwSuccess = t('profile.passwordChanged')

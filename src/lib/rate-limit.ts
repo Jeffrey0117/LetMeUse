@@ -40,7 +40,7 @@ function getMemEntry(key: string, windowMs: number): MemEntry {
 
 // ── Client IP extraction ────────────────────────────────
 
-function getClientIp(request: NextRequest): string {
+export function getClientIp(request: NextRequest): string {
   // Cloudflare 設的 CF-Connecting-IP 是真實 client IP, client 無法偽造 (CF 會覆寫),
   // 優先用它 → 修掉「攻擊者亂塞 X-Forwarded-For 換新 bucket 繞過 rate limit」。
   const cf = request.headers.get('cf-connecting-ip')?.trim()
@@ -73,6 +73,15 @@ export const RATE_LIMITS = {
     maxRequests: 10,
     maxFailures: 5,
     lockDurationMs: 15 * 60 * 1000, // 15 minutes lock
+  },
+  // Whole-account ceiling across every source address. High enough that one
+  // person cannot lock someone else out with a handful of guesses, low enough
+  // to cap a distributed guessing run at ~80 tries an hour.
+  loginAccount: {
+    windowMs: 60 * 1000,
+    maxRequests: 30,
+    maxFailures: 20,
+    lockDurationMs: 15 * 60 * 1000,
   },
   register: {
     windowMs: 24 * 60 * 60 * 1000, // 24 hour window
