@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { isRedirectAllowed, normaliseDomain } from '@/lib/auth/redirect'
 
 const BASE = 'https://auth.example.test'
-const DOMAINS = ['shop.example', 'https://Blog.Example:8443/path', '  ']
+const DOMAINS = ['https://shop.example', 'http://localhost:4016', 'bare.example', '*.wild.example', '  ']
 
 describe('normaliseDomain', () => {
   it('reduces anything domain-like to a bare lowercase hostname', () => {
@@ -14,16 +14,40 @@ describe('normaliseDomain', () => {
 })
 
 describe('isRedirectAllowed', () => {
-  it('allows registered domains and their subdomains', () => {
+  it('allows exactly the registered origins', () => {
     for (const target of [
       'https://shop.example/',
       'https://shop.example/cart?x=1#top',
-      'https://www.shop.example/',
-      'http://blog.example/post',
+      'https://SHOP.example/',
+      'http://localhost:4016/app',
+      'https://bare.example/x',
       'https://auth.example.test/login',
     ]) {
       expect(isRedirectAllowed(target, DOMAINS, BASE), target).toBe(true)
     }
+  })
+
+  it('does not extend a registered origin to its subdomains, other ports or http', () => {
+    for (const target of [
+      'https://www.shop.example/',
+      'https://evil.shop.example/',
+      'https://shop.example:8443/',
+      'http://shop.example/',
+      'http://localhost:9999/',
+      'http://bare.example/',
+      'https://sub.bare.example/',
+      'https://sub.auth.example.test/',
+    ]) {
+      expect(isRedirectAllowed(target, DOMAINS, BASE), target).toBe(false)
+    }
+  })
+
+  it('covers subdomains only for an explicit wildcard entry, https only', () => {
+    expect(isRedirectAllowed('https://a.wild.example/', DOMAINS, BASE)).toBe(true)
+    expect(isRedirectAllowed('https://a.b.wild.example/', DOMAINS, BASE)).toBe(true)
+    expect(isRedirectAllowed('http://a.wild.example/', DOMAINS, BASE)).toBe(false)
+    expect(isRedirectAllowed('https://wild.example/', DOMAINS, BASE)).toBe(false)
+    expect(isRedirectAllowed('https://notwild.example/', DOMAINS, BASE)).toBe(false)
   })
 
   it('rejects hosts the app never registered', () => {
@@ -31,7 +55,6 @@ describe('isRedirectAllowed', () => {
       'https://evil.example/',
       'https://shop.example.evil.example/',
       'https://notshop.example/',
-      'https://evilshop.example/',
       'https://shop.example@evil.example/',
       'https://evil.example/?next=https://shop.example/',
     ]) {
@@ -45,7 +68,7 @@ describe('isRedirectAllowed', () => {
     }
   })
 
-  it('an app with no domains only allows the auth host itself', () => {
+  it('an app with no domains only allows the auth origin itself', () => {
     expect(isRedirectAllowed('https://shop.example/', [], BASE)).toBe(false)
     expect(isRedirectAllowed('https://shop.example/', undefined, BASE)).toBe(false)
     expect(isRedirectAllowed('https://auth.example.test/x', [], BASE)).toBe(true)

@@ -7,12 +7,14 @@ import type { AuthManager } from '../auth'
 import type { ThemeManager } from '../theme'
 import { buildProfileCardStyles, buildAvatarStyles } from './styles'
 import { createModal } from './login-modal'
+import { esc, safeAvatarUrl } from './escape'
 import type { LoginModalDeps } from './login-modal'
 import { createProfileModal } from './profile-modal'
 import type { ProfileModalDeps } from './profile-modal'
 
 export interface WidgetDeps {
   accent: string
+  baseUrl: string
   locale: Locale
   auth: AuthManager
   theme: ThemeManager
@@ -24,7 +26,7 @@ export interface WidgetDeps {
 }
 
 export function renderProfileCard(deps: WidgetDeps, target: string | HTMLElement): () => void {
-  const { auth, theme, t, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
+  const { auth, theme, t, baseUrl, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
 
     // Build styles
     const PROFILE_CARD_STYLES = buildProfileCardStyles(theme.hostVars())
@@ -56,20 +58,21 @@ export function renderProfileCard(deps: WidgetDeps, target: string | HTMLElement
         return
       }
 
-      const initial = auth.currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?'
+      const initial = esc(auth.currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?')
+      const avatarUrl = safeAvatarUrl(auth.currentUser.avatar, baseUrl)
       shadow.innerHTML = `
         <style>${PROFILE_CARD_STYLES}</style>
         <div class="lmu-profile-card">
           <div class="lmu-profile-header">
             <div class="lmu-profile-avatar">
-              ${auth.currentUser.avatar ? `<img src="${auth.currentUser.avatar}" alt="" />` : initial}
+              ${avatarUrl ? `<img src="${esc(avatarUrl)}" alt="" />` : initial}
             </div>
             <div class="lmu-profile-info">
-              <p class="lmu-profile-name">${auth.currentUser.displayName}</p>
-              <p class="lmu-profile-email">${auth.currentUser.email}</p>
+              <p class="lmu-profile-name">${esc(auth.currentUser.displayName)}</p>
+              <p class="lmu-profile-email">${esc(auth.currentUser.email)}</p>
             </div>
           </div>
-          <div class="lmu-profile-role">${auth.currentUser.role}</div>
+          <div class="lmu-profile-role">${esc(auth.currentUser.role)}</div>
           <div class="lmu-profile-actions">
             <button class="lmu-profile-btn primary" id="lmu-pc-edit">Edit Profile</button>
             <button class="lmu-profile-btn" id="lmu-pc-logout">Logout</button>
@@ -99,7 +102,7 @@ export function renderProfileCard(deps: WidgetDeps, target: string | HTMLElement
 }
 
 export function renderAvatar(deps: WidgetDeps, target: string | HTMLElement): () => void {
-  const { auth, theme, t, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
+  const { auth, theme, t, baseUrl, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
 
     // Build styles
     const AVATAR_STYLES = buildAvatarStyles(theme.hostVars())
@@ -120,7 +123,7 @@ export function renderAvatar(deps: WidgetDeps, target: string | HTMLElement): ()
       if (!auth.currentUser) {
         shadow.innerHTML = `
           <style>${AVATAR_STYLES}</style>
-          <button class="lmu-avatar-login" id="lmu-av-login" title="${t('btn.login')}">
+          <button class="lmu-avatar-login" id="lmu-av-login" title="${esc(t('btn.login'))}">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
         `
@@ -131,17 +134,18 @@ export function renderAvatar(deps: WidgetDeps, target: string | HTMLElement): ()
         return
       }
 
-      const initial = auth.currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?'
+      const initial = esc(auth.currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?')
+      const avatarUrl = safeAvatarUrl(auth.currentUser.avatar, baseUrl)
       shadow.innerHTML = `
         <style>${AVATAR_STYLES}</style>
         <button class="lmu-avatar-btn" id="lmu-av-toggle">
-          ${auth.currentUser.avatar ? `<img src="${auth.currentUser.avatar}" alt="" />` : initial}
+          ${avatarUrl ? `<img src="${esc(avatarUrl)}" alt="" />` : initial}
         </button>
         ${dropdownOpen ? `
           <div class="lmu-avatar-dropdown">
             <div class="lmu-avatar-dropdown-header">
-              <p class="lmu-avatar-dropdown-name">${auth.currentUser.displayName}</p>
-              <p class="lmu-avatar-dropdown-email">${auth.currentUser.email}</p>
+              <p class="lmu-avatar-dropdown-name">${esc(auth.currentUser.displayName)}</p>
+              <p class="lmu-avatar-dropdown-email">${esc(auth.currentUser.email)}</p>
             </div>
             <button class="lmu-avatar-dropdown-item" id="lmu-av-profile">Edit Profile</button>
             <button class="lmu-avatar-dropdown-item danger" id="lmu-av-logout">Logout</button>

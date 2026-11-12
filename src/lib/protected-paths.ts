@@ -9,7 +9,11 @@ export function isAdminOnlyPath(pathname: string): boolean {
   return ADMIN_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
-/** Same-site path such as `/admin` — not `//host` or `/\host`, which browsers treat as another origin. */
+/**
+ * Same-site path such as `/admin`. Rejects `//host` and `/\host` (another
+ * origin to a browser) and any whitespace or control character: URL parsers
+ * strip tabs and newlines, so `/\t/host` would otherwise become `//host`.
+ */
 export function isLocalPath(target: string): boolean {
-  return /^\/(?![/\\])/.test(target)
+  return /^\/(?![/\\])[^\s\\\u0000-\u001f\u007f]*$/.test(target)
 }

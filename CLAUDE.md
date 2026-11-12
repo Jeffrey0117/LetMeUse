@@ -7,7 +7,7 @@ Auth-as-a-Service platform — embeddable authentication for any app.
 - Next.js 16 + React 19 + TypeScript
 - Tailwind CSS 4
 - File-based JSON storage (users, apps, refresh tokens)
-- JWT (jose, HS256) — access (24h) + refresh (30d) tokens
+- JWT (jose, ES256, public keys at `/api/jwks`) — access (4h) + refresh (30d) tokens
 - Email verification via Resend API
 - OAuth support (Google, GitHub)
 - esbuild for SDK bundling
@@ -47,7 +47,7 @@ src/app/api/admin/
   webhooks/route.ts          — Webhook event log + retry
 
 src/lib/
-  auth/jwt.ts                — JWT signing (HS256, jose)
+  auth/jwt.ts                — JWT signing (ES256, jose)
   auth/password.ts           — Bcrypt hashing
   auth/email.ts              — Resend integration
   auth/middleware.ts          — Auth middleware
@@ -149,9 +149,10 @@ Script tag: `<script src="https://letmeuse.isnowfriend.com/letmeuse.js" data-app
 { "sub": "usr_XXX", "email": "...", "name": "...", "role": "user", "permissions": ["ads.read"], "app": "app_XXX", "iat": 1234567890, "exp": 1234654290 }
 ```
 
-- Algorithm: HS256, signed with app secret
-- Access token: 24h expiry. Refresh token: 30d expiry.
-- **Decode base64url payload only — no signature verification needed (internal trust)**
+- Algorithm: **ES256**. Public keys: `GET /api/jwks`. The app secret is NOT used to verify tokens (it signs webhooks only).
+- Access token: 4h expiry. Refresh token: 30d expiry.
+- **Always verify the signature against JWKS, accept `alg: ES256` only, and require `app === your app ID` and a numeric `exp`.** Decoding the payload without verifying lets anyone forge `{ sub, role: 'admin' }`. Decode-only is acceptable solely for showing a name or avatar, never for a decision.
+- Use `jwks-verify-kit` (or `jose` `jwtVerify` with `algorithms: ['ES256']`); do not hand-roll it. Full recipe: `/integrate-letmeuse` Step 5.
 
 ---
 
@@ -184,7 +185,7 @@ Quick reference:
 1. `letmeuse_create_app({ name, domains, webhookUrl })` — save id + secret
 2. Add `<script src=".../letmeuse.js" data-app-id="APP_ID" data-accent="#yourcolor">` to layout
 3. Frontend: `onAuthChange(user => ...)` + `getToken()` for Bearer header
-4. Backend: decode JWT base64url payload to get `{ sub, email, name, role }`
+4. Backend: verify the token (ES256 via `/api/jwks`, `app` claim = your app ID), then read `{ sub, email, name, role }`
 5. Webhook: verify `X-LetMeUse-Signature` with HMAC-SHA256, handle `user.*` events
 
 Reference: **duk.tw** (React/Next.js), **Quickky** (Vanilla/Fastify)
@@ -203,6 +204,6 @@ Reference: **duk.tw** (React/Next.js), **Quickky** (Vanilla/Fastify)
 | Add a style by editing `styles.ts` | Add a preset in `src/sdk/presets.ts` + `STYLE_NAMES` + `StyleName`; `styles.ts` only reads `--lmu-*` variables |
 | Expect token from `onAuthChange` | Callback gets `user`, call `getToken()` separately |
 | Store tokens in localStorage | SDK manages `lmu_{appId}_*` automatically |
-| Verify JWT signature | Decode base64url only (internal trust) |
+| Decode the token without verifying it | Verify ES256 against `/api/jwks` and check the `app` claim; reject HS256 |
 | Use app ID for webhook HMAC | Use app **secret** |
 | Explore LetMeUse source code | Use this doc + `/integrate-letmeuse` command |

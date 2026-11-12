@@ -72,7 +72,7 @@ function CheckoutContent() {
         setSuccessUrl(result.data.successUrl)
         // Auto-redirect after 2 seconds
         setTimeout(() => {
-          if (result.data.successUrl) {
+          if (/^https?:\/\//i.test(result.data.successUrl ?? '')) {
             window.location.href = result.data.successUrl
           }
         }, 2000)

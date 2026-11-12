@@ -10,6 +10,7 @@ import type { AuthManager } from '../auth'
 import type { ThemeManager } from '../theme'
 import type { LoginModalDeps } from './login-modal'
 import { createModal } from './login-modal'
+import { esc } from './escape'
 
 export interface GateOverlayDeps {
   accent: string
@@ -119,8 +120,8 @@ export function showGateOverlay(
           <polyline points="10 17 15 12 10 7"/>
           <line x1="15" y1="12" x2="3" y2="12"/>
         </svg>
-        <p class="gate-message">${message}</p>
-        <button class="gate-btn">${buttonText}</button>
+        <p class="gate-message">${esc(message)}</p>
+        <button class="gate-btn">${esc(buttonText)}</button>
       </div>
     `
 

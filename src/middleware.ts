@@ -26,6 +26,15 @@ function isAllowedOrigin(origin: string): boolean {
   return false
 }
 
+/** Compare without returning early, so the time taken does not reveal how much matched. */
+function constantTimeEqual(a: string, b: string): boolean {
+  let diff = a.length ^ b.length
+  for (let i = 0; i < b.length; i += 1) {
+    diff |= (a.charCodeAt(i % Math.max(a.length, 1)) || 0) ^ b.charCodeAt(i)
+  }
+  return diff === 0
+}
+
 function isPublicCorsPath(pathname: string): boolean {
   return PUBLIC_CORS_PATHS.some(p => pathname.startsWith(p))
 }
@@ -56,8 +65,8 @@ export function middleware(request: NextRequest) {
   // ── Service token bypass (server-to-server calls skip CSRF + origin) ──
   const serviceToken = process.env.LETMEUSE_SERVICE_TOKEN
   const authHeader = request.headers.get('authorization')
-  const isServiceCall = serviceToken
-    && authHeader === `Bearer ${serviceToken}`
+  const isServiceCall = Boolean(serviceToken)
+    && constantTimeEqual(authHeader ?? '', `Bearer ${serviceToken}`)
 
   // ── CSRF double-submit cookie (admin/non-public endpoints) ──
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && !isPublic && !isServiceCall) {

@@ -9,6 +9,7 @@ import { apiPost } from '../api'
 import type { ThemeManager } from '../theme'
 import { buildModalStyles } from './styles'
 import { EYE_ICON, EYE_OFF_ICON } from './icons'
+import { esc } from './escape'
 
 export interface LoginModalDeps {
   appId: string
@@ -51,8 +52,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
     } catch { /* localStorage 不可用（隱私模式等）→ 純不記住 */ }
 
     // value 屬性專用 escape（防 email/密碼含 " 或 < 弄壞標記）
-    const escAttr = (s: string): string =>
-      s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+    const escAttr = esc
 
     // Create host element + shadow root for style isolation
     const host = document.createElement('div')
@@ -91,8 +91,8 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
           <div class="lmu-card">
             <button class="lmu-close" id="lmu-close-btn">&times;</button>
             <div class="lmu-title">${t('forgot.title')}</div>
-            ${successMsg ? `<div class="lmu-success">${successMsg}</div>` : ''}
-            ${errorMsg ? `<div class="lmu-error">${errorMsg}</div>` : ''}
+            ${successMsg ? `<div class="lmu-success">${esc(successMsg)}</div>` : ''}
+            ${errorMsg ? `<div class="lmu-error">${esc(errorMsg)}</div>` : ''}
             ${!successMsg ? `
               <p style="font-size:14px;color:var(--lmu-subtext);margin:0 0 18px 0;text-align:center;">${t('forgot.description')}</p>
               <form id="lmu-forgot-form">
@@ -147,7 +147,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
         <div class="lmu-card">
           <button class="lmu-close" id="lmu-close-btn">&times;</button>
           <div class="lmu-title">${isLogin ? t('title.login') : t('title.register')}</div>
-          ${errorMsg ? `<div class="lmu-error">${errorMsg}</div>` : ''}
+          ${errorMsg ? `<div class="lmu-error">${esc(errorMsg)}</div>` : ''}
           <form id="lmu-auth-form">
             ${!isLogin ? `
               <div class="lmu-field">

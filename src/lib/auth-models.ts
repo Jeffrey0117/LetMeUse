@@ -1,9 +1,18 @@
 import { z } from 'zod'
 
 /** Strip all HTML tags from a string to prevent XSS via displayName. */
-function stripHtml(input: string): string {
-  return input.replace(/<[^>]*>/g, '').trim()
+export function stripHtml(input: string): string {
+  // Remove whole tags first, then any stray angle bracket: an unclosed `<img onerror=…`
+  // has no closing `>` for the tag pattern to match.
+  return input.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim()
 }
+
+/**
+ * A member may point their avatar at an https image. Paths under /uploads are
+ * written only by the avatar upload route itself — accepting them here would
+ * let one member name (and on their next upload, delete) another member's file.
+ */
+const AVATAR_URL = /^https:\/\/[^\s"'<>`\\]+$/
 
 // ?�?� App ??represents a registered client app ?�?�?�?�?�?�?�?�?�?�?�?�
 
@@ -119,7 +128,7 @@ export type LoginInput = z.infer<typeof LoginSchema>
 
 export const UpdateProfileSchema = z.object({
   displayName: z.string().min(1).transform(stripHtml).optional(),
-  avatar: z.string().optional(),
+  avatar: z.string().max(500).regex(AVATAR_URL).optional(),
 })
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>

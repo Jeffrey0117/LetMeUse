@@ -16,9 +16,15 @@ function isAuthRejection(err: unknown): boolean {
   return err instanceof ApiError && err.status === 401
 }
 
+/** How long after leaving for a sign-in the returning tokens are still accepted. */
+const SIGN_IN_WINDOW_MS = 15 * 60 * 1000
+const JWT_SHAPE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
+const TOKEN_CHARS = /^[A-Za-z0-9._-]+$/
+
 export class AuthManager {
   private readonly accessKey: string
   private readonly refreshKey: string
+  private readonly pendingKey: string
   private readonly apiDeps: ApiDeps
   private readonly appId: string
 
@@ -46,6 +52,7 @@ export class AuthManager {
     const prefix = `lmu_${appId}_`
     this.accessKey = `${prefix}access_token`
     this.refreshKey = `${prefix}refresh_token`
+    this.pendingKey = `${prefix}signin_pending`
     this._readyPromise = new Promise(resolve => {
       this._readyResolve = resolve
     })
@@ -221,12 +228,45 @@ export class AuthManager {
   }
 
   startOAuth(provider: string): void {
+    this.markSignInStarted()
     const redirectUrl = encodeURIComponent(window.location.href)
     window.location.href = `${this.apiDeps.baseUrl}/api/auth/oauth/${provider}?app_id=${this.appId}&redirect=${redirectUrl}`
   }
 
   // ── Hash tokens (OAuth callback) ─────────────────────
 
+  /**
+   * Record that this browser is about to leave for a sign-in (OAuth or the
+   * hosted login page). Tokens arriving in the URL are accepted only while
+   * this mark is fresh.
+   */
+  markSignInStarted(): void {
+    try {
+      localStorage.setItem(this.pendingKey, String(Date.now()))
+    } catch {
+      // Storage unavailable: the returning tokens will be ignored and the
+      // member simply signs in through the modal instead.
+    }
+  }
+
+  private consumeSignInStarted(): boolean {
+    try {
+      const startedAt = Number(localStorage.getItem(this.pendingKey))
+      localStorage.removeItem(this.pendingKey)
+      return Number.isFinite(startedAt) && startedAt > 0 && Date.now() - startedAt < SIGN_IN_WINDOW_MS
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Pick up tokens returned in the URL fragment after an OAuth / hosted sign-in.
+   *
+   * A link is not a sign-in: without the mark set by markSignInStarted(),
+   * `#lmu_token=…` in a URL someone sent would silently switch the visitor
+   * into the sender's account. So the fragment is always removed, and only
+   * honoured when this browser began a sign-in a few minutes ago.
+   */
   checkHashTokens(): boolean {
     const hash = window.location.hash
     if (!hash.includes('lmu_token=')) return false
@@ -235,9 +275,16 @@ export class AuthManager {
     const token = params.get('lmu_token')
     const refresh = params.get('lmu_refresh')
 
-    if (token && refresh) {
+    // Remove the tokens from the address bar before anything else can read them.
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+
+    if (!this.consumeSignInStarted()) {
+      console.warn('[LetMeUse SDK] Ignored sign-in tokens in the URL: no sign-in was started from this browser.')
+      return false
+    }
+
+    if (token && refresh && JWT_SHAPE.test(token) && TOKEN_CHARS.test(refresh)) {
       this.storeTokens(token, refresh)
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
       return true
     }
     return false

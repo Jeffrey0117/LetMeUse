@@ -1,91 +1,16 @@
-import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
-import crypto from 'crypto'
-import { authenticateRequest } from '@/lib/auth/middleware'
-import { corsResponse, success, fail } from '@/lib/api-result'
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
-const MAX_SIZE = 5 * 1024 * 1024 // 5MB
-
-const CONTENT_TYPE_TO_EXTENSIONS: Record<string, readonly string[]> = {
-  'image/jpeg': ['jpg', 'jpeg'],
-  'image/png': ['png'],
-  'image/gif': ['gif'],
-  'image/webp': ['webp'],
-  'image/svg+xml': ['svg'],
+// 這支原本讓「任何 app 的任何會員」上傳檔案(含 SVG)到本站 public/uploads,
+// 等於讓外人把可執行內容放上發 token 的這個網域。唯一的呼叫端是已移到 adman
+// 的廣告編輯器,所以停用。頭像上傳走 /api/auth/avatar,不受影響。
+function gone() {
+  return NextResponse.json(
+    { error: 'This feature has moved to the standalone adman app.' },
+    { status: 410 }
+  )
 }
 
-function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9.]/g, '').toLowerCase()
-}
-
-function extractExtension(filename: string): string {
-  const parts = filename.split('.')
-  return parts.length > 1 ? (parts.pop() ?? 'bin') : 'bin'
-}
-
-function isExtensionValidForType(ext: string, contentType: string): boolean {
-  const allowed = CONTENT_TYPE_TO_EXTENSIONS[contentType]
-  if (!allowed) {
-    return false
-  }
-  return allowed.includes(ext.toLowerCase())
-}
-
-export async function OPTIONS(request: NextRequest) {
-  return corsResponse(request.headers.get('origin'))
-}
-
-export async function POST(request: NextRequest) {
-  const origin = request.headers.get('origin')
-
-  try {
-    const authResult = await authenticateRequest(request)
-    if (authResult instanceof NextResponse) {
-      return authResult
-    }
-
-    const formData = await request.formData()
-    const file = formData.get('file') as File | null
-
-    if (!file) {
-      return fail('No file provided', 400, origin)
-    }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return fail('Invalid file type. Allowed: JPEG, PNG, GIF, WebP, SVG', 400, origin)
-    }
-
-    if (file.size > MAX_SIZE) {
-      return fail('File too large. Max size: 5MB', 400, origin)
-    }
-
-    const ext = extractExtension(file.name)
-
-    if (!isExtensionValidForType(ext, file.type)) {
-      return fail(
-        `File extension ".${ext}" does not match content type "${file.type}"`,
-        400,
-        origin
-      )
-    }
-
-    await mkdir(UPLOAD_DIR, { recursive: true })
-
-    const sanitized = sanitizeFilename(file.name)
-    const uniqueId = crypto.randomUUID()
-    const filename = `${uniqueId}-${sanitized}`
-    const filePath = path.join(UPLOAD_DIR, filename)
-
-    const buffer = Buffer.from(await file.arrayBuffer())
-    await writeFile(filePath, buffer)
-
-    const url = `/uploads/${filename}`
-    return success({ url, filename, ext, size: file.size }, 201, origin)
-  } catch (error) {
-        return fail('Operation failed', 500, origin)
-  }
-}
+export function GET() { return gone() }
+export function POST() { return gone() }
+export function PUT() { return gone() }
+export function DELETE() { return gone() }

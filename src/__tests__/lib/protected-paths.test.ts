@@ -23,7 +23,7 @@ describe('isLocalPath', () => {
   })
 
   it('rejects anything a browser would send to another origin', () => {
-    for (const target of ['', 'admin', 'https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)']) {
+    for (const target of ['', 'admin', 'https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)', '/\t/evil.example', '/\n/evil.example', '/ /evil.example', '/a\\b', '/\u0000/evil.example']) {
       expect(isLocalPath(target), target).toBe(false)
     }
   })

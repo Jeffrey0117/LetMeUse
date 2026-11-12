@@ -56,6 +56,8 @@ yarn-error.log*
 .deploy-state.json
 .pkg-hash
 .pm2-ecosystem.json
+.pm2-*.json
+.pm2-*.cjs
 
 # stray npm lockfile — this project uses pnpm (pnpm-lock.yaml)
 package-lock.json

@@ -135,6 +135,10 @@ export async function fetchOAuthUserInfo(
   const data = await res.json()
 
   if (provider === 'google') {
+    // An unverified address proves nothing about who owns it.
+    if (data.verified_email !== true || !data.email) {
+      throw new Error('Google account email is not verified')
+    }
     return {
       id: String(data.id),
       email: data.email,
@@ -145,16 +149,19 @@ export async function fetchOAuthUserInfo(
 
   // GitHub: email may not be in profile, need separate call
   if (provider === 'github') {
-    let email = data.email as string | null
+    // The profile's public email is optional and not what we rely on: always
+    // take a VERIFIED address from the emails API, never an unverified one.
+    let email: string | null = null
 
-    if (!email) {
+    {
       const emailRes = await fetch('https://api.github.com/user/emails', {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (emailRes.ok) {
         const emails = await emailRes.json()
         const primary = emails.find((e: { primary: boolean; verified: boolean }) => e.primary && e.verified)
-        email = primary?.email ?? emails[0]?.email ?? null
+        const anyVerified = emails.find((e: { verified: boolean }) => e.verified)
+        email = primary?.email ?? anyVerified?.email ?? null
       }
     }
 

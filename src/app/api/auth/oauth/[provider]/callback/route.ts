@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { getById, getAll, create, update, APPS_FILE, USERS_FILE, REFRESH_TOKENS_FILE } from '@/lib/storage'
 import type { App, AuthUser, RefreshToken, OAuthProviderName } from '@/lib/auth-models'
-import { OAUTH_PROVIDER_NAMES } from '@/lib/auth-models'
+import { OAUTH_PROVIDER_NAMES, stripHtml } from '@/lib/auth-models'
 import { generateUserId, generateRefreshTokenId } from '@/lib/id'
 import { signAccessToken, signRefreshTokenJWT } from '@/lib/auth/jwt'
 import { hashToken } from '@/lib/auth/token-hash'
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           appId,
           email: oauthUser.email.toLowerCase(),
           passwordHash: await hashPassword(randomPassword),
-          displayName: oauthUser.name,
+          displayName: stripHtml(String(oauthUser.name ?? '')) || oauthUser.email.split('@')[0],
           avatar: oauthUser.avatar,
           role: 'user',
           disabled: false,

@@ -139,6 +139,7 @@ export const CreateCheckoutSchema = z.object({
   currency: z.string().default('TWD'),
   customerEmail: z.string().email().optional(),
   metadata: z.record(z.string(), z.string()).optional(),
-  successUrl: z.string().url(),
-  cancelUrl: z.string().url().optional(),
+  // .url() alone accepts javascript: and data: — both run script when navigated to.
+  successUrl: z.string().url().regex(/^https?:\/\//i),
+  cancelUrl: z.string().url().regex(/^https?:\/\//i).optional(),
 })

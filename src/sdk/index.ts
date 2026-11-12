@@ -69,7 +69,7 @@ function getProfileModalDeps(): ProfileModalDeps {
 
 function getWidgetDeps(): WidgetDeps {
   return {
-    accent, locale, auth: authManager, theme: themeManager, t,
+    accent, baseUrl, locale, auth: authManager, theme: themeManager, t,
     getLoginModalDeps, getProfileModalDeps,
     onLogout: () => letmeuse.logout(),
     onAuthChange: (cb) => letmeuse.onAuthChange(cb as AuthCallback),
@@ -89,6 +89,7 @@ const letmeuse = {
   },
   login() {
     if (mode === 'redirect') {
+      authManager.markSignInStarted()
       window.location.href = `${baseUrl}/login?app=${appId}&redirect=${encodeURIComponent(window.location.href)}`
       return
     }
@@ -96,6 +97,7 @@ const letmeuse = {
   },
   register() {
     if (mode === 'redirect') {
+      authManager.markSignInStarted()
       window.location.href = `${baseUrl}/login?app=${appId}&redirect=${encodeURIComponent(window.location.href)}&tab=register`
       return
     }

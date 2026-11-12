@@ -9,6 +9,7 @@ import { apiPost, apiPutAuth, apiPostAuth } from '../api'
 import type { ThemeManager } from '../theme'
 import { buildProfileModalStyles } from './styles'
 import { EYE_ICON, EYE_OFF_ICON } from './icons'
+import { esc, safeAvatarUrl } from './escape'
 import { createModal } from './login-modal'
 import type { LoginModalDeps } from './login-modal'
 
@@ -93,11 +94,9 @@ export function createProfileModal(deps: ProfileModalDeps): void {
 
     function render(): void {
       if (!auth.currentUser) return
-      const initial = auth.currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?'
+      const initial = esc(auth.currentUser.displayName?.charAt(0)?.toUpperCase() ?? '?')
 
-      const avatarSrc = auth.currentUser.avatar
-        ? (auth.currentUser.avatar.startsWith('http') ? auth.currentUser.avatar : `${baseUrl}${auth.currentUser.avatar}`)
-        : ''
+      const avatarSrc = safeAvatarUrl(auth.currentUser.avatar, baseUrl)
       const isVerified = auth.currentUser.emailVerified === true
       // Only surface verification status for apps that actually enforce it.
       // Apps with verification off never send a verification email, so showing
@@ -111,11 +110,11 @@ export function createProfileModal(deps: ProfileModalDeps): void {
           <button class="lmu-close" id="lmu-close">&times;</button>
           <div class="lmu-title">${t('profile.title')}</div>
 
-          ${avatarSuccess ? `<div class="lmu-success" style="margin-bottom:16px;">${avatarSuccess}</div>` : ''}
+          ${avatarSuccess ? `<div class="lmu-success" style="margin-bottom:16px;">${esc(avatarSuccess)}</div>` : ''}
 
           <div class="lmu-avatar-area">
             <div class="lmu-avatar-circle" id="lmu-avatar-click" title="${t('profile.avatar')}">
-              ${avatarSrc ? `<img src="${avatarSrc}" alt="" />` : initial}
+              ${avatarSrc ? `<img src="${esc(avatarSrc)}" alt="" />` : initial}
               <div class="lmu-avatar-overlay">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </div>
@@ -123,9 +122,9 @@ export function createProfileModal(deps: ProfileModalDeps): void {
             </div>
             <input type="file" id="lmu-avatar-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;" />
             <div class="lmu-avatar-info">
-              <p class="lmu-avatar-name">${auth.currentUser.displayName}</p>
+              <p class="lmu-avatar-name">${esc(auth.currentUser.displayName)}</p>
               <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
-                <p class="lmu-avatar-email" style="margin:0;">${auth.currentUser.email}</p>
+                <p class="lmu-avatar-email" style="margin:0;">${esc(auth.currentUser.email)}</p>
                 ${showVerification
                   ? (isVerified
                       ? `<span class="lmu-badge lmu-badge-verified">${t('profile.emailVerified')}</span>`
@@ -143,7 +142,7 @@ export function createProfileModal(deps: ProfileModalDeps): void {
             ${nameSaved ? `<div class="lmu-success">${t('profile.saved')}</div>` : ''}
             ${editingName ? `
               <div class="lmu-field">
-                <input class="lmu-input" type="text" id="lmu-name-input" value="${nameValue.replace(/"/g, '&quot;')}" />
+                <input class="lmu-input" type="text" id="lmu-name-input" value="${esc(nameValue)}" />
               </div>
               <div class="lmu-row">
                 <button class="lmu-btn-sm lmu-btn-primary" id="lmu-name-save" ${savingName ? 'disabled' : ''}>
@@ -153,7 +152,7 @@ export function createProfileModal(deps: ProfileModalDeps): void {
               </div>
             ` : `
               <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:15px;">${auth.currentUser.displayName}</span>
+                <span style="font-size:15px;">${esc(auth.currentUser.displayName)}</span>
                 <button class="lmu-btn-sm lmu-btn-secondary" id="lmu-name-edit" style="padding:0 12px;height:32px;font-size:12px;">
                   ${locale === 'zh' ? '編輯' : 'Edit'}
                 </button>
@@ -164,8 +163,8 @@ export function createProfileModal(deps: ProfileModalDeps): void {
           <!-- Change Password Section -->
           <div class="lmu-section">
             <div class="lmu-section-title">${t('profile.changePassword')}</div>
-            ${pwSuccess ? `<div class="lmu-success">${pwSuccess}</div>` : ''}
-            ${pwError ? `<div class="lmu-error">${pwError}</div>` : ''}
+            ${pwSuccess ? `<div class="lmu-success">${esc(pwSuccess)}</div>` : ''}
+            ${pwError ? `<div class="lmu-error">${esc(pwError)}</div>` : ''}
             ${showPwForm ? `
               <form id="lmu-pw-form">
                 <div class="lmu-field">
