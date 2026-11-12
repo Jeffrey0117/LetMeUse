@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useLang } from '@/components/layout/lang-provider'
 import { CodeBlock } from './code-block'
 import { HeroPreview } from './hero-preview'
+import { CompareSection } from './compare-section'
+import { getCompareCopy } from './compare-copy'
 import { buildScriptSnippet, buildUsageSnippet, getLandingCopy, type PreviewStyle } from './copy'
 
 const container = 'mx-auto w-full max-w-6xl px-5 sm:px-8'
@@ -17,6 +19,7 @@ const subscribeNever = () => () => {}
 export function LandingPage() {
   const { locale, setLocale } = useLang()
   const copy = getLandingCopy(locale)
+  const compareCopy = getCompareCopy(locale)
   const [style, setStyle] = useState<PreviewStyle>('minimal')
   const [dark, setDark] = useState(false)
   // Empty on the server, the real origin after hydration — no domain is hard-coded.
@@ -38,6 +41,7 @@ export function LandingPage() {
         <div className={`${container} flex h-14 items-center gap-1`}>
           <Link href="/" className="mr-auto text-lg font-bold tracking-tight">LetMeUse</Link>
           <a href="#features" className="hidden px-3 py-2 text-sm text-zinc-600 hover:text-zinc-900 sm:block">{copy.nav.features}</a>
+          <a href="#compare" className="hidden px-3 py-2 text-sm text-zinc-600 hover:text-zinc-900 sm:block">{copy.nav.compare}</a>
           <a href="/themes.html" className="px-3 py-2 text-sm text-zinc-600 hover:text-zinc-900">{copy.nav.styles}</a>
           <Link href="/admin" className="px-3 py-2 text-sm text-zinc-600 hover:text-zinc-900">{copy.nav.admin}</Link>
           <button
@@ -138,7 +142,9 @@ export function LandingPage() {
         </div>
       </section>
 
-      <footer className={`${container} flex items-center gap-5 py-8 text-sm text-zinc-500`}>
+      <CompareSection copy={compareCopy} containerClass={container} titleClass={sectionTitle} />
+
+      <footer className={`${container} flex items-center gap-5 border-t border-zinc-200 py-8 text-sm text-zinc-500`}>
         <span className="mr-auto font-semibold text-zinc-700">LetMeUse</span>
         <a href="/themes.html" className="hover:text-zinc-900">{copy.footer.styles}</a>
         <Link href="/admin" className="hover:text-zinc-900">{copy.footer.admin}</Link>

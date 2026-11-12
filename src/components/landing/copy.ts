@@ -6,7 +6,7 @@
 import type { Locale } from '@/lib/i18n'
 
 export interface LandingCopy {
-  nav: { styles: string; features: string; admin: string; switchTo: string }
+  nav: { styles: string; features: string; compare: string; admin: string; switchTo: string }
   hero: { title: string; sub: string; primary: string; secondary: string; copy: string; copied: string }
   preview: { light: string; dark: string; caption: string }
   steps: { title: string; items: readonly { title: string; body: string }[] }
@@ -18,7 +18,7 @@ export interface LandingCopy {
 }
 
 const zh: LandingCopy = {
-  nav: { styles: '樣式', features: '功能', admin: '後台', switchTo: 'English' },
+  nav: { styles: '樣式', features: '功能', compare: '比較', admin: '後台', switchTo: 'English' },
   hero: {
     title: '一行 script，網站就有會員登入',
     sub: '登入、註冊、忘記密碼、Google 與 GitHub 登入、個人資料，全部包在一個彈窗裡。貼上就能用。',
@@ -65,7 +65,7 @@ const zh: LandingCopy = {
 }
 
 const en: LandingCopy = {
-  nav: { styles: 'Styles', features: 'Features', admin: 'Admin', switchTo: '中文' },
+  nav: { styles: 'Styles', features: 'Features', compare: 'Compare', admin: 'Admin', switchTo: '中文' },
   hero: {
     title: 'One script tag. Your site has sign-in.',
     sub: 'Sign in, sign up, password reset, Google and GitHub login, and profile editing, all in one modal. Paste it and it works.',
