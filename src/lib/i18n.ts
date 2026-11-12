@@ -278,6 +278,10 @@ const translations = {
   'admin.apps.delete': { en: 'Delete', zh: '刪除' },
   'admin.apps.confirmDelete': { en: 'Are you sure you want to delete this app?', zh: '確定要刪除此應用程式？' },
   'admin.apps.domains': { en: 'Allowed Domains', zh: '允許的網域' },
+  'auth.redirectNotAllowed': {
+    en: 'Signed in, but the return address is not registered for this app, so you were not sent back.',
+    zh: '已登入，但回跳網址不在這個 app 登記的網域內，所以沒有跳回去。',
+  },
   'admin.apps.scriptTag': { en: 'Script Tag', zh: '嵌入標籤' },
   'admin.apps.styleGallery': { en: 'Browse styles', zh: '挑樣式' },
 

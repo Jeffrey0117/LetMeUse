@@ -10,33 +10,14 @@ import { exchangeCodeForTokens, fetchOAuthUserInfo, parseOAuthState } from '@/li
 import { dispatchWebhook } from '@/lib/webhook'
 import { writeAuditLog } from '@/lib/audit'
 import { createSession } from '@/lib/session'
+import { isRedirectAllowed } from '@/lib/auth/redirect'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
 function validateRedirectUrl(redirectUrl: string | undefined, app: App): string {
   const fallback = `${BASE_URL}/login`
-  if (!redirectUrl) return fallback
-
-  try {
-    const url = new URL(redirectUrl)
-
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      return fallback
-    }
-
-    const allowedHosts = [
-      ...(app.domains ?? []),
-      new URL(BASE_URL).hostname,
-    ]
-
-    if (!allowedHosts.some((d) => url.hostname === d || url.hostname.endsWith(`.${d}`))) {
-      return fallback
-    }
-
-    return url.toString()
-  } catch {
-    return fallback
-  }
+  if (!redirectUrl || !isRedirectAllowed(redirectUrl, app.domains, BASE_URL)) return fallback
+  return new URL(redirectUrl).toString()
 }
 
 type RouteParams = { params: Promise<{ provider: string }> }
