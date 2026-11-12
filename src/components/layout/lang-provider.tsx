@@ -22,6 +22,11 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('lmu-locale') as Locale | null
     if (saved === 'en' || saved === 'zh') {
       setLocaleState(saved)
+      return
+    }
+    // First visit: follow the browser language instead of always starting in English.
+    if (navigator.language?.toLowerCase().startsWith('zh')) {
+      setLocaleState('zh')
     }
   }, [])
 

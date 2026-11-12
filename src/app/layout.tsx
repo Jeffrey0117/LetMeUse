@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Navbar } from '@/components/layout/navbar'
+import { SiteShell } from '@/components/layout/site-shell'
 import { LangProvider } from '@/components/layout/lang-provider'
 import './globals.css'
 
@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'LetMeUse',
-  description: 'Embeddable SaaS infrastructure platform',
+  title: 'LetMeUse — 一行 script 就有會員登入 | Drop-in sign-in for any site',
+  description:
+    '登入、註冊、忘記密碼、Google 與 GitHub 登入、個人資料，全部包在一個彈窗裡。Sign in, sign up, password reset, social login and profile editing in one embeddable modal.',
 }
 
 export default function RootLayout({
@@ -30,8 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <LangProvider>
-          <Navbar />
-          <main className="min-h-screen bg-zinc-50 px-12 lg:px-32">{children}</main>
+          <SiteShell>{children}</SiteShell>
         </LangProvider>
       </body>
     </html>

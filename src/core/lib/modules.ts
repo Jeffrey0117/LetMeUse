@@ -50,7 +50,7 @@ export function getAdminNavItems(): NavItem[] {
 
 export function getPublicNavItems(): NavItem[] {
   const items: NavItem[] = [
-    { href: '/', label: 'nav.dashboard', icon: 'Home' },
+    { href: '/dashboard', label: 'nav.dashboard', icon: 'Home' },
   ]
 
   if (isModuleEnabled('ads')) {
