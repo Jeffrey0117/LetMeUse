@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isAdminOnlyPath } from '@/lib/protected-paths'
 
 const SELF_ORIGINS = new Set([
   'http://localhost:3000',
@@ -33,8 +34,8 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const origin = request.headers.get('origin')
 
-  // ── Admin page protection ─────────────────────────────
-  if (pathname.startsWith('/admin')) {
+  // ── Admin page protection (admin area + internal tool pages) ──
+  if (pathname.startsWith('/admin') || isAdminOnlyPath(pathname)) {
     const token = request.cookies.get('lmu_admin_token')?.value
       ?? request.headers.get('x-admin-token')
 
@@ -141,5 +142,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/admin/:path*'],
+  matcher: [
+    '/api/:path*',
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/projects/:path*',
+    '/ads/:path*',
+    '/templates/:path*',
+  ],
 }

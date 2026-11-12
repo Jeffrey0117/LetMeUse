@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useLang } from './lang-provider'
 import { usePublicNav } from '@/core/hooks/use-module'
 
-export function Navbar() {
+export function Navbar({ showNav = true }: { showNav?: boolean }) {
   const pathname = usePathname()
   const { locale, setLocale, t } = useLang()
   const navItems = usePublicNav()
@@ -17,13 +17,13 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-zinc-200">
-      <div className="mx-auto flex h-14 items-center px-12 lg:px-32">
+      <div className="mx-auto flex h-14 items-center px-5 sm:px-12 lg:px-32">
         <Link href="/" className="text-lg font-bold tracking-tight text-zinc-900 mr-8">
           LetMeUse
         </Link>
 
         <nav className="flex items-center gap-1 flex-1">
-          {navItems.map((item) => (
+          {showNav && navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
