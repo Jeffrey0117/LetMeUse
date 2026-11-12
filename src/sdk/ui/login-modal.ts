@@ -6,7 +6,7 @@ import type { LetMeUseUser, Locale } from '../types'
 import type { AuthManager } from '../auth'
 import type { ApiDeps } from '../api'
 import { apiPost } from '../api'
-import { ThemeManager, buildHostThemeVars, getThemeColors } from '../theme'
+import type { ThemeManager } from '../theme'
 import { buildModalStyles } from './styles'
 import { EYE_ICON, EYE_OFF_ICON } from './icons'
 
@@ -21,7 +21,7 @@ export interface LoginModalDeps {
 }
 
 export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'register' | 'forgot'): void {
-  const { appId, accent, locale, auth, theme, apiDeps, t } = deps
+  const { appId, auth, theme, apiDeps, t } = deps
 
     const existing = document.getElementById('lmu-auth-host')
     if (existing) {
@@ -64,8 +64,7 @@ export function createModal(deps: LoginModalDeps, initialMode: 'login' | 'regist
     theme.registerHost(host)
 
     // Build styles using current theme
-    const hostThemeVars = buildHostThemeVars(getThemeColors(theme.isDark))
-    const MODAL_STYLES = buildModalStyles(accent, hostThemeVars)
+    const MODAL_STYLES = buildModalStyles(theme.hostVars())
 
     function removeHost(): void {
       theme.unregisterHost(host)

@@ -279,6 +279,7 @@ const translations = {
   'admin.apps.confirmDelete': { en: 'Are you sure you want to delete this app?', zh: '確定要刪除此應用程式？' },
   'admin.apps.domains': { en: 'Allowed Domains', zh: '允許的網域' },
   'admin.apps.scriptTag': { en: 'Script Tag', zh: '嵌入標籤' },
+  'admin.apps.styleGallery': { en: 'Browse styles', zh: '挑樣式' },
 
   // Admin Pagination
   'admin.pagination.prev': { en: 'Previous', zh: '上一頁' },

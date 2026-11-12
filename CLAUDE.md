@@ -60,7 +60,11 @@ src/lib/
   rate-limit.ts              — Rate limiting
   audit.ts                   — Audit logging
 
-src/sdk/letmeuse-sdk.ts      — Client SDK source (→ /public/letmeuse.js)
+src/sdk/index.ts             — Client SDK entry (→ /public/letmeuse.js via `pnpm build:sdk`)
+src/sdk/presets.ts           — Style presets (`data-style`): shape + light/dark palette each
+src/sdk/theme.ts             — style × light/dark × accent → `--lmu-*` CSS variables
+src/sdk/ui/styles.ts         — Component CSS (reads `--lmu-*` only; phone-compact layout ≤480px)
+public/themes.html           — Style gallery (iframes of themes-frame.html)
 ```
 
 ## API (Key Endpoints)
@@ -111,7 +115,8 @@ Script tag: `<script src="https://letmeuse.isnowfriend.com/letmeuse.js" data-app
 |-----------|----------|--------|---------|-------------|
 | `data-app-id` | **Yes** | `"app_XXX"` | — | App ID from create_app |
 | `data-theme` | No | `light`, `dark`, `auto` | `light` | `auto` detects from host page (data-theme attr, .dark class, OS) |
-| `data-accent` | No | CSS hex color | `#2563eb` | Buttons, links, focus rings. **Match your site brand!** |
+| `data-style` | No | `classic`, `minimal`, `soft`, `glass`, `brutal`, `terminal`, `paper` | `classic` | Visual style (shape, type, palette). Each has a light and a dark variant. Live gallery + copyable snippet: `/themes.html` |
+| `data-accent` | No | CSS color (hex / name / rgb() / hsl()) | the style's own accent (`classic`: `#2563eb`) | Buttons, links, focus rings. Overrides the style's accent; button text flips to dark automatically on light accents |
 | `data-locale` | No | `en`, `zh` | `en` | UI language |
 | `data-mode` | No | `modal`, `redirect` | `modal` | modal = Shadow DOM popup, redirect = navigate to LetMeUse |
 
@@ -194,6 +199,8 @@ Reference: **duk.tw** (React/Next.js), **Quickky** (Vanilla/Fastify)
 | `letmeuse.user()` or `getUser()` | `letmeuse.user` (property) |
 | Forget `data-accent` (default blue) | Set to your brand color |
 | Forget `data-theme="dark"` | Use `dark` or `auto` for dark sites |
+| Leave the default look on a site it doesn't match | Pick a `data-style` from `/themes.html` |
+| Add a style by editing `styles.ts` | Add a preset in `src/sdk/presets.ts` + `STYLE_NAMES` + `StyleName`; `styles.ts` only reads `--lmu-*` variables |
 | Expect token from `onAuthChange` | Callback gets `user`, call `getToken()` separately |
 | Store tokens in localStorage | SDK manages `lmu_{appId}_*` automatically |
 | Verify JWT signature | Decode base64url only (internal trust) |

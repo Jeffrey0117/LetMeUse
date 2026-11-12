@@ -7,7 +7,7 @@
 
 import type { LetMeUseUser } from '../types'
 import type { AuthManager } from '../auth'
-import { ThemeManager, buildHostThemeVars, getThemeColors } from '../theme'
+import type { ThemeManager } from '../theme'
 import type { LoginModalDeps } from './login-modal'
 import { createModal } from './login-modal'
 
@@ -27,7 +27,7 @@ export function showGateOverlay(
   deps: GateOverlayDeps,
   options: GateOptions = {}
 ): Promise<LetMeUseUser> {
-  const { accent, auth, theme, t, getLoginModalDeps } = deps
+  const { auth, theme, t, getLoginModalDeps } = deps
   const message = options.message || t('gate.defaultMessage')
   const buttonText = t('gate.button')
 
@@ -50,22 +50,21 @@ export function showGateOverlay(
     host.style.cssText = 'position:fixed;inset:0;z-index:99998;'
     const shadow = host.attachShadow({ mode: 'closed' })
 
-    const colors = getThemeColors(theme.isDark)
-
     const style = document.createElement('style')
     style.textContent = `
       :host {
-        ${buildHostThemeVars(colors)}
-        --lmu-accent: ${accent};
+        ${theme.hostVars()}
       }
       .gate-backdrop {
         position: fixed;
         inset: 0;
-        background: ${colors.bg};
+        background: var(--lmu-bg);
+        -webkit-backdrop-filter: var(--lmu-card-filter);
+        backdrop-filter: var(--lmu-card-filter);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: var(--lmu-font);
         animation: fadeIn 0.3s ease;
       }
       @keyframes fadeIn {
@@ -82,12 +81,12 @@ export function showGateOverlay(
         width: 64px;
         height: 64px;
         margin: 0 auto 1.5rem;
-        color: ${colors.subtextColor};
+        color: var(--lmu-subtext);
         opacity: 0.5;
       }
       .gate-message {
         font-size: 1.125rem;
-        color: ${colors.subtextColor};
+        color: var(--lmu-subtext);
         margin-bottom: 1.5rem;
         line-height: 1.6;
       }
@@ -97,9 +96,10 @@ export function showGateOverlay(
         justify-content: center;
         padding: 0.75rem 2rem;
         background: var(--lmu-accent);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
+        color: var(--lmu-on-accent);
+        border: var(--lmu-btn-border);
+        border-radius: var(--lmu-btn-radius);
+        box-shadow: var(--lmu-btn-shadow);
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
@@ -127,6 +127,7 @@ export function showGateOverlay(
     shadow.appendChild(style)
     shadow.appendChild(container)
     theme.registerHost(host)
+    theme.applyToHost(host)
     document.body.appendChild(host)
 
     // Click button → open login modal

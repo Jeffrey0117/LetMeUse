@@ -6,7 +6,7 @@ import type { LetMeUseUser, Locale } from '../types'
 import type { AuthManager } from '../auth'
 import type { ApiDeps } from '../api'
 import { apiPost, apiPutAuth, apiPostAuth } from '../api'
-import { ThemeManager, buildHostThemeVars, getThemeColors } from '../theme'
+import type { ThemeManager } from '../theme'
 import { buildProfileModalStyles } from './styles'
 import { EYE_ICON, EYE_OFF_ICON } from './icons'
 import { createModal } from './login-modal'
@@ -26,7 +26,7 @@ export interface ProfileModalDeps {
 }
 
 export function createProfileModal(deps: ProfileModalDeps): void {
-  const { appId, accent, locale, baseUrl, auth, theme, apiDeps, t, getLoginModalDeps, onLogout } = deps
+  const { appId, locale, baseUrl, auth, theme, apiDeps, t, getLoginModalDeps, onLogout } = deps
 
     if (!auth.currentUser) {
       createModal(getLoginModalDeps(), 'login')
@@ -77,8 +77,7 @@ export function createProfileModal(deps: ProfileModalDeps): void {
     theme.registerHost(host)
 
     // Build styles using current theme
-    const hostThemeVars = buildHostThemeVars(getThemeColors(theme.isDark))
-    const PROFILE_MODAL_STYLES = buildProfileModalStyles(accent, hostThemeVars)
+    const PROFILE_MODAL_STYLES = buildProfileModalStyles(theme.hostVars())
 
     function removeHost(): void {
       theme.unregisterHost(host)
@@ -133,7 +132,7 @@ export function createProfileModal(deps: ProfileModalDeps): void {
                       : `<span class="lmu-badge lmu-badge-unverified">${t('profile.emailNotVerified')}</span>`)
                   : ''}
               </div>
-              ${showVerification && !isVerified && !verificationSent ? `<a id="lmu-resend-verify" style="font-size:11px;color:${accent};cursor:pointer;margin-top:4px;display:inline-block;">${t('profile.resendVerification')}</a>` : ''}
+              ${showVerification && !isVerified && !verificationSent ? `<a id="lmu-resend-verify" style="font-size:11px;color:var(--lmu-link);cursor:pointer;margin-top:4px;display:inline-block;">${t('profile.resendVerification')}</a>` : ''}
               ${showVerification && verificationSent ? `<span style="font-size:11px;color:#059669;margin-top:4px;display:inline-block;">${t('profile.verificationSent')}</span>` : ''}
             </div>
           </div>

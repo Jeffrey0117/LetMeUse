@@ -1,22 +1,92 @@
 /**
- * Theme detection, CSS custom properties, and auto-theme observer
+ * Theme resolution (style preset × light/dark × accent), CSS custom
+ * properties, and the auto-theme observer.
  */
 
-import type { ThemeColors, ThemeMode } from './types'
+import type { StyleName, ThemeMode, ThemeTokens } from './types'
+import { BASE_SHAPE, PRESETS, STYLE_NAMES } from './presets'
 
-export function getThemeColors(isDark: boolean): ThemeColors {
-  return {
-    bg: isDark ? '#1e1e2e' : '#ffffff',
-    textColor: isDark ? '#cdd6f4' : '#1e293b',
-    subtextColor: isDark ? '#a6adc8' : '#64748b',
-    inputBg: isDark ? '#313244' : '#f8fafc',
-    inputBorder: isDark ? '#45475a' : '#e2e8f0',
-    errorBg: isDark ? '#3b1c1c' : '#fef2f2',
-    errorColor: isDark ? '#f87171' : '#dc2626',
-    errorBorder: isDark ? '#5c2828' : '#fecaca',
-    hoverBg: isDark ? '#3b3b50' : '#f1f5f9',
-    roleBg: isDark ? '#313244' : '#f1f5f9',
-    dropdownItemHoverBg: isDark ? '#313244' : '#f8fafc',
+const DEFAULT_STYLE: StyleName = 'classic'
+const LIGHT_TEXT = '#ffffff'
+const DARK_TEXT = '#111111'
+/** Only clearly light accents (yellow, lime, white…) flip to dark text. */
+const LIGHT_ACCENT_LUMINANCE = 0.6
+
+/** Map a `data-style` attribute value to a known style; unknown → classic. */
+export function resolveStyleName(raw: string | null | undefined): StyleName {
+  const name = (raw ?? '').trim().toLowerCase()
+  return (STYLE_NAMES as readonly string[]).includes(name) ? (name as StyleName) : DEFAULT_STYLE
+}
+
+/**
+ * The accent is written into a <style> block, so it must be a plain CSS colour:
+ * hex, a colour name, or rgb()/hsl()/oklch(). Anything that could close the
+ * rule or the tag (`;`, `{`, `<`, quotes…) is rejected → null (= style default).
+ */
+export function sanitizeAccent(raw: string | null | undefined): string | null {
+  const value = (raw ?? '').trim()
+  if (!value || value.length > 64) return null
+  return /^(#[0-9a-f]{3,8}|[a-z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([0-9a-z.,%\s/+-]+\))$/i.test(value) ? value : null
+}
+
+/** `#rgb` / `#rrggbb` → `rrggbb`; anything else → null. */
+function parseHex(color: string): string | null {
+  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim())
+  if (!match) return null
+  const hex = match[1]
+  return hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex
+}
+
+function relativeLuminance(hex: string): number {
+  const channel = (offset: number): number => {
+    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255
+    return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4)
+}
+
+/** Text colour that stays readable on the accent. Unparseable → white (historical). */
+export function contrastTextFor(accent: string): string {
+  const hex = parseHex(accent)
+  if (!hex) return LIGHT_TEXT
+  return relativeLuminance(hex) > LIGHT_ACCENT_LUMINANCE ? DARK_TEXT : LIGHT_TEXT
+}
+
+/** Translucent accent for focus rings. */
+export function focusRingFor(accent: string): string {
+  const hex = parseHex(accent)
+  return hex ? `#${hex}22` : `color-mix(in srgb, ${accent} 14%, transparent)`
+}
+
+/** Resolve the full token set for a style in the given mode. */
+export function resolveTokens(
+  style: StyleName,
+  isDark: boolean,
+  accentOverride: string | null | undefined
+): ThemeTokens {
+  const preset = PRESETS[style]
+  const merged = { ...BASE_SHAPE, ...preset.shape, ...(isDark ? preset.dark : preset.light) }
+  const override = sanitizeAccent(accentOverride)
+  const accent = override || merged.accent
+  // A caller-chosen accent is also the link colour, as it always was.
+  const link = override || merged.link || accent
+  return { ...merged, accent, link, onAccent: contrastTextFor(accent), ring: focusRingFor(accent) }
+}
+
+function cssVarName(tokenKey: string): string {
+  return `--lmu-${tokenKey.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`
+}
+
+/** Token set → `--lmu-*: value;` declarations for a `:host` block. */
+export function tokensToCssVars(tokens: ThemeTokens): string {
+  return Object.entries(tokens)
+    .map(([key, value]) => `${cssVarName(key)}: ${value};`)
+    .join('\n    ')
+}
+
+function applyTokensToHost(host: HTMLElement, tokens: ThemeTokens): void {
+  for (const [key, value] of Object.entries(tokens)) {
+    host.style.setProperty(cssVarName(key), value)
   }
 }
 
@@ -35,53 +105,36 @@ export function resolveIsDark(themeSetting: ThemeMode): boolean {
   return themeSetting === 'dark'
 }
 
-export function buildHostThemeVars(colors: ThemeColors): string {
-  return `
-    --lmu-bg: ${colors.bg};
-    --lmu-text: ${colors.textColor};
-    --lmu-subtext: ${colors.subtextColor};
-    --lmu-input-bg: ${colors.inputBg};
-    --lmu-input-border: ${colors.inputBorder};
-    --lmu-error-bg: ${colors.errorBg};
-    --lmu-error-color: ${colors.errorColor};
-    --lmu-error-border: ${colors.errorBorder};
-    --lmu-hover-bg: ${colors.hoverBg};
-    --lmu-role-bg: ${colors.roleBg};
-    --lmu-dropdown-item-hover-bg: ${colors.dropdownItemHoverBg};
-  `
-}
-
-export function applyThemeToHost(host: HTMLElement, isDark: boolean): void {
-  const colors = getThemeColors(isDark)
-  host.style.setProperty('--lmu-bg', colors.bg)
-  host.style.setProperty('--lmu-text', colors.textColor)
-  host.style.setProperty('--lmu-subtext', colors.subtextColor)
-  host.style.setProperty('--lmu-input-bg', colors.inputBg)
-  host.style.setProperty('--lmu-input-border', colors.inputBorder)
-  host.style.setProperty('--lmu-error-bg', colors.errorBg)
-  host.style.setProperty('--lmu-error-color', colors.errorColor)
-  host.style.setProperty('--lmu-error-border', colors.errorBorder)
-  host.style.setProperty('--lmu-hover-bg', colors.hoverBg)
-  host.style.setProperty('--lmu-role-bg', colors.roleBg)
-  host.style.setProperty('--lmu-dropdown-item-hover-bg', colors.dropdownItemHoverBg)
-}
-
 /**
  * Manages theme state, shadow host tracking, and auto-theme observers.
  */
 export class ThemeManager {
   private currentIsDark: boolean
   private readonly themeSetting: ThemeMode
+  private readonly style: StyleName
+  private readonly accentOverride: string | null
   private readonly activeShadowHosts: Set<HTMLElement> = new Set()
 
-  constructor(themeSetting: ThemeMode) {
+  constructor(themeSetting: ThemeMode, style: StyleName = DEFAULT_STYLE, accentOverride: string | null = null) {
     this.themeSetting = themeSetting
+    this.style = style
+    this.accentOverride = accentOverride
     this.currentIsDark = resolveIsDark(themeSetting)
     this.setupAutoTheme()
   }
 
   get isDark(): boolean {
     return this.currentIsDark
+  }
+
+  /** Current tokens (style × mode × accent). */
+  get tokens(): ThemeTokens {
+    return resolveTokens(this.style, this.currentIsDark, this.accentOverride)
+  }
+
+  /** `--lmu-*` declarations to drop into a component's `:host` rule. */
+  hostVars(): string {
+    return tokensToCssVars(this.tokens)
   }
 
   registerHost(host: HTMLElement): void {
@@ -93,12 +146,13 @@ export class ThemeManager {
   }
 
   applyToHost(host: HTMLElement): void {
-    applyThemeToHost(host, this.currentIsDark)
+    applyTokensToHost(host, this.tokens)
   }
 
   private updateAllShadowHosts(): void {
+    const tokens = this.tokens
     for (const host of this.activeShadowHosts) {
-      applyThemeToHost(host, this.currentIsDark)
+      applyTokensToHost(host, tokens)
     }
   }
 

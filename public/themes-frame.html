@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>LetMeUse style preview</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background:
+      radial-gradient(60% 50% at 15% 10%, #fbbf24 0%, transparent 60%),
+      radial-gradient(55% 45% at 90% 20%, #f472b6 0%, transparent 60%),
+      radial-gradient(70% 60% at 50% 100%, #38bdf8 0%, transparent 65%),
+      #e2e8f0;
+    color: #0f172a;
+  }
+  body.dark {
+    background:
+      radial-gradient(60% 50% at 15% 10%, #7c3aed 0%, transparent 60%),
+      radial-gradient(55% 45% at 90% 20%, #0ea5e9 0%, transparent 60%),
+      radial-gradient(70% 60% at 50% 100%, #be185d 0%, transparent 65%),
+      #0b1020;
+    color: #e2e8f0;
+  }
+  .page { padding: 20px; display: grid; gap: 12px; }
+  .bar, .block { border-radius: 10px; background: rgba(255,255,255,0.55); }
+  body.dark .bar, body.dark .block { background: rgba(255,255,255,0.1); }
+  .bar { height: 36px; }
+  .block { height: 110px; }
+  .reopen {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+    padding: 9px 16px; border-radius: 999px; border: 0; cursor: pointer;
+    font: inherit; font-size: 13px; font-weight: 600;
+    background: #0f172a; color: #fff;
+  }
+  body.dark .reopen { background: #f8fafc; color: #0f172a; }
+</style>
+</head>
+<body>
+<div class="page" aria-hidden="true">
+  <div class="bar"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+</div>
+<button class="reopen" id="reopen" type="button">Open</button>
+<script>
+(function () {
+  // Every value is checked against a fixed list before it reaches the SDK tag:
+  // this page lives on the auth origin, so nothing from the URL is passed through raw.
+  var STYLES = ['classic', 'minimal', 'soft', 'glass', 'brutal', 'terminal', 'paper']
+  var q = new URLSearchParams(location.search)
+  function pick(key, allowed, fallback) {
+    var value = q.get(key)
+    return allowed.indexOf(value) !== -1 ? value : fallback
+  }
+  var style = pick('style', STYLES, 'classic')
+  var theme = pick('theme', ['light', 'dark'], 'light')
+  var locale = pick('locale', ['en', 'zh'], 'zh')
+  var view = pick('view', ['login', 'register'], 'login')
+  var accent = q.get('accent')
+  var accentOk = typeof accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(accent)
+
+  if (theme === 'dark') document.body.classList.add('dark')
+
+  var tag = document.createElement('script')
+  tag.src = '/letmeuse.js'
+  tag.setAttribute('data-app-id', 'style-preview')
+  tag.setAttribute('data-style', style)
+  tag.setAttribute('data-theme', theme)
+  tag.setAttribute('data-locale', locale)
+  if (accentOk) tag.setAttribute('data-accent', accent)
+
+  function open() {
+    if (!window.letmeuse) return
+    if (view === 'register') window.letmeuse.register()
+    else window.letmeuse.login()
+  }
+  tag.onload = open
+  document.getElementById('reopen').addEventListener('click', open)
+  document.body.appendChild(tag)
+})()
+</script>
+</body>
+</html>

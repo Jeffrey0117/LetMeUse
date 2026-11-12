@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LetMeUse 登入視窗樣式</title>
+<style>
+  :root {
+    --bg: #fafafa; --panel: #ffffff; --line: #e4e4e7; --text: #18181b; --muted: #71717a; --code: #f4f4f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f0f11; --panel: #18181b; --line: #2e2e33; --text: #f4f4f5; --muted: #a1a1aa; --code: #232327; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+    line-height: 1.5;
+  }
+  header { max-width: 1180px; margin: 0 auto; padding: 32px 16px 8px; }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -0.2px; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  code { font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace; font-size: 12.5px; }
+  header code { background: var(--code); padding: 1px 5px; border-radius: 4px; }
+
+  .controls {
+    position: sticky; top: 0; z-index: 5; background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .controls-inner {
+    max-width: 1180px; margin: 0 auto; padding: 10px 16px;
+    display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px;
+  }
+  .group { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button {
+    font: inherit; font-size: 13px; padding: 5px 11px; border: 0; cursor: pointer;
+    background: var(--panel); color: var(--muted);
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+  input[type="color"] { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+  input[type="color"]:disabled { opacity: 0.35; cursor: not-allowed; }
+  label.check { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+
+  main {
+    max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px;
+    display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .card-head { padding: 12px 14px 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .card-head h2 { font-size: 15px; margin: 0; font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace; }
+  .card-head span { font-size: 12px; color: var(--muted); text-align: right; }
+  iframe { display: block; width: 100%; height: 560px; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--code); }
+  .snippet { padding: 10px 14px 12px; display: grid; gap: 8px; }
+  .snippet pre {
+    margin: 0; padding: 9px 10px; background: var(--code); border-radius: 7px;
+    white-space: pre-wrap; word-break: break-all; font-size: 12px;
+  }
+  .row { display: flex; gap: 8px; }
+  .row button, .row a {
+    font: inherit; font-size: 12.5px; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text); text-decoration: none;
+  }
+  .row button:hover, .row a:hover { border-color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>登入視窗樣式</h1>
+  <p>在 script 標籤加上 <code>data-style</code> 就能換樣式。深淺色用 <code>data-theme</code>，品牌色用 <code>data-accent</code>；不指定品牌色時用樣式自己的配色。下面每一格都是手機寬度的實際畫面。</p>
+</header>
+
+<div class="controls">
+  <div class="controls-inner">
+    <div class="group">深淺
+      <div class="seg" data-key="theme">
+        <button type="button" data-value="light" aria-pressed="true">淺色</button>
+        <button type="button" data-value="dark" aria-pressed="false">深色</button>
+      </div>
+    </div>
+    <div class="group">畫面
+      <div class="seg" data-key="view">
+        <button type="button" data-value="login" aria-pressed="true">登入</button>
+        <button type="button" data-value="register" aria-pressed="false">註冊</button>
+      </div>
+    </div>
+    <div class="group">語言
+      <div class="seg" data-key="locale">
+        <button type="button" data-value="zh" aria-pressed="true">中文</button>
+        <button type="button" data-value="en" aria-pressed="false">English</button>
+      </div>
+    </div>
+    <div class="group">
+      <label class="check"><input type="checkbox" id="use-accent"> 自訂品牌色</label>
+      <input type="color" id="accent" value="#e11d48" disabled>
+    </div>
+  </div>
+</div>
+
+<main id="grid"></main>
+
+<script>
+(function () {
+  var STYLES = [
+    { name: 'classic',  note: '預設，原本的樣子' },
+    { name: 'minimal',  note: '細線、中性灰，工具與後台' },
+    { name: 'soft',     note: '大圓角、柔和，生活與社群' },
+    { name: 'glass',    note: '毛玻璃，圖片與影音站' },
+    { name: 'brutal',   note: '粗框硬陰影，個性站' },
+    { name: 'terminal', note: '等寬字，開發者工具' },
+    { name: 'paper',    note: '紙感、襯線標題，部落格與課程' }
+  ]
+  var state = { theme: 'light', view: 'login', locale: 'zh', accent: null }
+  var grid = document.getElementById('grid')
+  var cards = []
+
+  function frameUrl(style) {
+    var q = new URLSearchParams({ style: style, theme: state.theme, view: state.view, locale: state.locale })
+    if (state.accent) q.set('accent', state.accent)
+    return 'themes-frame.html?' + q.toString()
+  }
+
+  function snippet(style) {
+    var attrs = ['src="' + location.origin + '/letmeuse.js"', 'data-app-id="YOUR_APP_ID"']
+    if (style !== 'classic') attrs.push('data-style="' + style + '"')
+    attrs.push('data-theme="auto"')
+    if (state.accent) attrs.push('data-accent="' + state.accent + '"')
+    if (state.locale === 'zh') attrs.push('data-locale="zh"')
+    return '<script ' + attrs.join('\n        ') + '></' + 'script>'
+  }
+
+  function el(tag, props, children) {
+    var node = document.createElement(tag)
+    Object.keys(props || {}).forEach(function (key) { node[key] = props[key] })
+    ;(children || []).forEach(function (child) { node.appendChild(child) })
+    return node
+  }
+
+  STYLES.forEach(function (style) {
+    var frame = el('iframe', { title: style.name + ' preview', loading: 'lazy' })
+    var pre = el('pre')
+    var copy = el('button', { type: 'button', textContent: '複製' })
+    var full = el('a', { textContent: '開大圖', target: '_blank', rel: 'noopener' })
+    copy.addEventListener('click', function () {
+      var done = function () {
+        copy.textContent = '已複製'
+        setTimeout(function () { copy.textContent = '複製' }, 1200)
+      }
+      if (navigator.clipboard) navigator.clipboard.writeText(pre.textContent).then(done, function () {})
+    })
+    grid.appendChild(el('section', { className: 'card' }, [
+      el('div', { className: 'card-head' }, [
+        el('h2', { textContent: style.name }),
+        el('span', { textContent: style.note })
+      ]),
+      frame,
+      el('div', { className: 'snippet' }, [pre, el('div', { className: 'row' }, [copy, full])])
+    ]))
+    cards.push({ name: style.name, frame: frame, pre: pre, full: full })
+  })
+
+  function refresh() {
+    cards.forEach(function (card) {
+      var url = frameUrl(card.name)
+      card.frame.src = url
+      card.full.href = url
+      card.pre.textContent = snippet(card.name)
+    })
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.seg'), function (seg) {
+    seg.addEventListener('click', function (event) {
+      var button = event.target.closest('button')
+      if (!button) return
+      Array.prototype.forEach.call(seg.querySelectorAll('button'), function (other) {
+        other.setAttribute('aria-pressed', String(other === button))
+      })
+      state = Object.assign({}, state, (function () {
+        var patch = {}
+        patch[seg.getAttribute('data-key')] = button.getAttribute('data-value')
+        return patch
+      })())
+      refresh()
+    })
+  })
+
+  var useAccent = document.getElementById('use-accent')
+  var accentInput = document.getElementById('accent')
+  function syncAccent() {
+    accentInput.disabled = !useAccent.checked
+    state = Object.assign({}, state, { accent: useAccent.checked ? accentInput.value : null })
+    refresh()
+  }
+  useAccent.addEventListener('change', syncAccent)
+  accentInput.addEventListener('change', syncAccent)
+
+  refresh()
+})()
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
 
 import type { Locale } from '../types'
 import type { AuthManager } from '../auth'
-import { ThemeManager, buildHostThemeVars, getThemeColors } from '../theme'
+import type { ThemeManager } from '../theme'
 import { buildProfileCardStyles, buildAvatarStyles } from './styles'
 import { createModal } from './login-modal'
 import type { LoginModalDeps } from './login-modal'
@@ -24,11 +24,10 @@ export interface WidgetDeps {
 }
 
 export function renderProfileCard(deps: WidgetDeps, target: string | HTMLElement): () => void {
-  const { accent, auth, theme, t, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
+  const { auth, theme, t, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
 
     // Build styles
-    const hostThemeVars = buildHostThemeVars(getThemeColors(theme.isDark))
-    const PROFILE_CARD_STYLES = buildProfileCardStyles(accent, hostThemeVars)
+    const PROFILE_CARD_STYLES = buildProfileCardStyles(theme.hostVars())
 
     const el = typeof target === 'string' ? document.querySelector(target) : target
     if (!el) return () => {}
@@ -100,11 +99,10 @@ export function renderProfileCard(deps: WidgetDeps, target: string | HTMLElement
 }
 
 export function renderAvatar(deps: WidgetDeps, target: string | HTMLElement): () => void {
-  const { accent, auth, theme, t, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
+  const { auth, theme, t, getLoginModalDeps, getProfileModalDeps, onLogout, onAuthChange } = deps
 
     // Build styles
-    const hostThemeVars = buildHostThemeVars(getThemeColors(theme.isDark))
-    const AVATAR_STYLES = buildAvatarStyles(accent, hostThemeVars)
+    const AVATAR_STYLES = buildAvatarStyles(theme.hostVars())
 
     const el = typeof target === 'string' ? document.querySelector(target) : target
     if (!el) return () => {}

@@ -4,7 +4,7 @@
  */
 
 /** Build the modal overlay + card styles (login/register/forgot) */
-export function buildModalStyles(accent: string, hostThemeVars: string): string {
+export function buildModalStyles(hostThemeVars: string): string {
   return `
     :host {
       ${hostThemeVars}
@@ -14,8 +14,11 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: rgba(0,0,0,0.5) !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--lmu-backdrop) !important;
+      -webkit-backdrop-filter: var(--lmu-backdrop-filter);
+      backdrop-filter: var(--lmu-backdrop-filter);
+      padding: 16px;
+      font-family: var(--lmu-font);
       line-height: 1.5;
     }
     *, *::before, *::after {
@@ -24,12 +27,18 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
     .lmu-card {
       background: var(--lmu-bg);
       color: var(--lmu-text);
-      border-radius: 16px;
+      border-radius: var(--lmu-radius);
       padding: 36px;
       width: 100%;
       max-width: 400px;
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
       position: relative;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+      box-shadow: var(--lmu-shadow);
+      border: var(--lmu-card-border);
+      -webkit-backdrop-filter: var(--lmu-card-filter);
+      backdrop-filter: var(--lmu-card-filter);
       line-height: 1.5;
     }
     .lmu-close {
@@ -46,7 +55,7 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
+      border-radius: max(0px, calc(var(--lmu-radius-ctl) - 4px));
       line-height: 1;
       transition: background 0.15s;
       padding: 0;
@@ -54,12 +63,14 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
     }
     .lmu-close:hover { background: var(--lmu-input-bg); }
     .lmu-title {
+      font-family: var(--lmu-title-font);
       font-size: 24px;
-      font-weight: 700;
+      font-weight: var(--lmu-title-weight);
       margin: 0 0 28px 0;
-      padding: 0;
-      text-align: center;
-      letter-spacing: -0.3px;
+      padding: var(--lmu-title-pad);
+      text-align: var(--lmu-title-align);
+      text-transform: var(--lmu-title-transform);
+      letter-spacing: var(--lmu-title-spacing);
     }
     .lmu-field {
       margin: 0 0 18px 0;
@@ -73,6 +84,7 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       padding: 0;
       color: var(--lmu-subtext);
       letter-spacing: 0.2px;
+      text-transform: var(--lmu-label-transform);
     }
     .lmu-req {
       color: #ef4444;
@@ -90,7 +102,7 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
     }
     .lmu-label-link {
       font-size: 12px;
-      color: ${accent};
+      color: var(--lmu-link);
       cursor: pointer;
       text-decoration: none;
       font-weight: 500;
@@ -111,7 +123,7 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       width: 15px;
       height: 15px;
       margin: 0;
-      accent-color: ${accent};
+      accent-color: var(--lmu-accent);
       cursor: pointer;
     }
     .lmu-terms {
@@ -130,8 +142,8 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       height: 44px;
       padding: 0 14px;
       margin: 0;
-      border: 1.5px solid var(--lmu-input-border);
-      border-radius: 10px;
+      border: var(--lmu-ctl-border-w) solid var(--lmu-input-border);
+      border-radius: var(--lmu-radius-ctl);
       font-size: 15px;
       font-family: inherit;
       line-height: 44px;
@@ -141,8 +153,8 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       transition: border-color 0.2s, box-shadow 0.2s;
     }
     .lmu-input:focus {
-      border-color: ${accent};
-      box-shadow: 0 0 0 3px ${accent}22;
+      border-color: var(--lmu-accent);
+      box-shadow: 0 0 0 3px var(--lmu-ring);
     }
     .lmu-input::placeholder {
       color: var(--lmu-subtext);
@@ -185,21 +197,24 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: 100%;
       height: 48px;
       padding: 0;
       margin: 12px 0 0 0;
-      border: none;
-      border-radius: 10px;
+      border: var(--lmu-btn-border);
+      border-radius: var(--lmu-btn-radius);
+      box-shadow: var(--lmu-btn-shadow);
       font-size: 15px;
       font-weight: 600;
       font-family: inherit;
-      line-height: 48px;
+      line-height: 1;
       text-align: center;
       cursor: pointer;
-      background: ${accent};
-      color: #fff;
+      background: var(--lmu-accent);
+      color: var(--lmu-on-accent);
       transition: opacity 0.2s, transform 0.1s;
     }
     .lmu-btn:hover { opacity: 0.92; }
@@ -217,7 +232,7 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       margin-right: 5px;
     }
     .lmu-switch a {
-      color: ${accent};
+      color: var(--lmu-link);
       cursor: pointer;
       text-decoration: none;
       font-weight: 700;
@@ -229,18 +244,18 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       color: var(--lmu-error-color);
       padding: 11px 14px;
       margin: 0 0 18px 0;
-      border-radius: 10px;
+      border-radius: var(--lmu-radius-ctl);
       font-size: 13px;
       border: 1px solid var(--lmu-error-border);
     }
     .lmu-success {
-      background: #ecfdf5;
-      color: #059669;
+      background: var(--lmu-success-bg);
+      color: var(--lmu-success-color);
       padding: 11px 14px;
       margin: 0 0 18px 0;
-      border-radius: 10px;
+      border-radius: var(--lmu-radius-ctl);
       font-size: 13px;
-      border: 1px solid #a7f3d0;
+      border: 1px solid var(--lmu-success-border);
     }
     .lmu-divider {
       display: flex;
@@ -276,8 +291,8 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       height: 44px;
       padding: 0 16px;
       margin: 0;
-      border: 1.5px solid var(--lmu-input-border);
-      border-radius: 10px;
+      border: var(--lmu-ctl-border-w) solid var(--lmu-input-border);
+      border-radius: var(--lmu-radius-ctl);
       font-size: 14px;
       font-weight: 500;
       font-family: inherit;
@@ -288,7 +303,7 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       transition: border-color 0.2s, background 0.15s;
     }
     .lmu-oauth-btn:hover {
-      border-color: ${accent};
+      border-color: var(--lmu-accent);
       background: var(--lmu-hover-bg);
     }
     .lmu-oauth-btn svg {
@@ -296,14 +311,31 @@ export function buildModalStyles(accent: string, hostThemeVars: string): string 
       height: 18px;
       flex-shrink: 0;
     }
-    @media (max-width: 480px) {
-      .lmu-card { margin: 16px; padding: 28px; }
+    @media (max-width: 480px), (max-height: 600px) {
+      .lmu-card { max-width: 340px; padding: 24px 20px 20px; }
+      .lmu-close { top: 8px; right: 8px; }
+      .lmu-title { font-size: 19px; margin: 0 0 16px 0; }
+      .lmu-field { margin: 0 0 12px 0; }
+      .lmu-label { font-size: 12px; margin: 0 0 5px 0; }
+      .lmu-label-row { margin: 0 0 5px 0; }
+      .lmu-label-row .lmu-label { margin: 0; }
+      /* 16px: anything smaller makes iOS Safari zoom the whole page on focus */
+      .lmu-input { height: 42px; line-height: 42px; padding: 0 12px; font-size: 16px; }
+      .lmu-input-wrap .lmu-input { padding-right: 42px; }
+      .lmu-eye-btn { width: 42px; height: 42px; }
+      .lmu-remember { margin: 0 0 10px 0; }
+      .lmu-terms { margin: 0 0 10px 0; }
+      .lmu-btn { height: 44px; margin: 8px 0 0 0; }
+      .lmu-divider { margin: 14px 0 12px 0; }
+      .lmu-oauth-btn { height: 42px; padding: 0 10px; font-size: 13px; }
+      .lmu-switch { margin: 14px 0 0 0; }
+      .lmu-error, .lmu-success { padding: 9px 12px; margin: 0 0 12px 0; }
     }
   `
 }
 
 /** Build the profile modal styles */
-export function buildProfileModalStyles(accent: string, hostThemeVars: string): string {
+export function buildProfileModalStyles(hostThemeVars: string): string {
   return `
     :host {
       ${hostThemeVars}
@@ -313,21 +345,28 @@ export function buildProfileModalStyles(accent: string, hostThemeVars: string): 
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: rgba(0,0,0,0.5) !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--lmu-backdrop) !important;
+      -webkit-backdrop-filter: var(--lmu-backdrop-filter);
+      backdrop-filter: var(--lmu-backdrop-filter);
+      padding: 16px;
+      font-family: var(--lmu-font);
       line-height: 1.5;
     }
     *, *::before, *::after { box-sizing: border-box; }
     .lmu-card {
       background: var(--lmu-bg);
       color: var(--lmu-text);
-      border-radius: 16px;
+      border-radius: var(--lmu-radius);
       padding: 36px;
       width: 100%;
       max-width: 420px;
       position: relative;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.35);
-      max-height: 90vh;
+      box-shadow: var(--lmu-shadow);
+      border: var(--lmu-card-border);
+      -webkit-backdrop-filter: var(--lmu-card-filter);
+      backdrop-filter: var(--lmu-card-filter);
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
       overflow-y: auto;
     }
     .lmu-close {
@@ -335,19 +374,22 @@ export function buildProfileModalStyles(accent: string, hostThemeVars: string): 
       background: none; border: none; font-size: 22px; cursor: pointer;
       color: var(--lmu-subtext); width: 32px; height: 32px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 6px; transition: background 0.15s; padding: 0; margin: 0;
+      border-radius: max(0px, calc(var(--lmu-radius-ctl) - 4px)); transition: background 0.15s; padding: 0; margin: 0;
     }
     .lmu-close:hover { background: var(--lmu-input-bg); }
     .lmu-title {
-      font-size: 22px; font-weight: 700; margin: 0 0 24px 0;
-      text-align: center; letter-spacing: -0.3px;
+      font-family: var(--lmu-title-font);
+      font-size: 22px; font-weight: var(--lmu-title-weight); margin: 0 0 24px 0;
+      padding: var(--lmu-title-pad);
+      text-align: var(--lmu-title-align); text-transform: var(--lmu-title-transform);
+      letter-spacing: var(--lmu-title-spacing);
     }
     .lmu-avatar-area {
       display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
     }
     .lmu-avatar-circle {
       width: 56px; height: 56px; border-radius: 50%;
-      background: ${accent}; color: #fff; display: flex;
+      background: var(--lmu-accent); color: var(--lmu-on-accent); display: flex;
       align-items: center; justify-content: center;
       font-size: 24px; font-weight: 600; flex-shrink: 0; overflow: hidden;
       cursor: pointer; position: relative; transition: opacity 0.15s;
@@ -366,7 +408,7 @@ export function buildProfileModalStyles(accent: string, hostThemeVars: string): 
       font-size: 11px; font-weight: 600; padding: 2px 8px;
       border-radius: 9999px;
     }
-    .lmu-badge-verified { background: #ecfdf5; color: #059669; }
+    .lmu-badge-verified { background: var(--lmu-success-bg); color: var(--lmu-success-color); }
     .lmu-badge-unverified { background: var(--lmu-error-bg); color: var(--lmu-error-color); }
     .lmu-avatar-info { min-width: 0; flex: 1; }
     .lmu-avatar-name {
@@ -391,11 +433,11 @@ export function buildProfileModalStyles(accent: string, hostThemeVars: string): 
     }
     .lmu-input {
       display: block; width: 100%; height: 42px; padding: 0 12px;
-      border: 1.5px solid var(--lmu-input-border); border-radius: 10px;
+      border: var(--lmu-ctl-border-w) solid var(--lmu-input-border); border-radius: var(--lmu-radius-ctl);
       font-size: 14px; font-family: inherit; background: var(--lmu-input-bg);
       color: var(--lmu-text); outline: none; transition: border-color 0.2s;
     }
-    .lmu-input:focus { border-color: ${accent}; box-shadow: 0 0 0 3px ${accent}22; }
+    .lmu-input:focus { border-color: var(--lmu-accent); box-shadow: 0 0 0 3px var(--lmu-ring); }
     .lmu-input:disabled { opacity: 0.6; cursor: not-allowed; }
     .lmu-input-wrap { position: relative; }
     .lmu-input-wrap .lmu-input { padding-right: 42px; }
@@ -411,12 +453,13 @@ export function buildProfileModalStyles(accent: string, hostThemeVars: string): 
     .lmu-eye-btn svg { width: 18px; height: 18px; display: block; }
     .lmu-row { display: flex; gap: 8px; margin-top: 10px; }
     .lmu-btn-sm {
-      height: 38px; padding: 0 16px; border-radius: 8px;
+      height: 38px; padding: 0 16px; border-radius: max(0px, calc(var(--lmu-radius-ctl) - 2px));
       font-size: 13px; font-weight: 600; font-family: inherit;
       cursor: pointer; border: none; transition: opacity 0.15s;
     }
     .lmu-btn-primary {
-      background: ${accent}; color: #fff;
+      background: var(--lmu-accent); color: var(--lmu-on-accent);
+      border: var(--lmu-btn-border);
     }
     .lmu-btn-primary:hover { opacity: 0.9; }
     .lmu-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -426,42 +469,54 @@ export function buildProfileModalStyles(accent: string, hostThemeVars: string): 
     }
     .lmu-btn-secondary:hover { background: var(--lmu-hover-bg); }
     .lmu-btn-danger {
-      width: 100%; height: 42px; border-radius: 10px;
+      width: 100%; height: 42px; border-radius: var(--lmu-radius-ctl);
       font-size: 14px; font-weight: 600; font-family: inherit;
-      cursor: pointer; border: 1.5px solid var(--lmu-error-border);
+      cursor: pointer; border: var(--lmu-ctl-border-w) solid var(--lmu-error-border);
       background: none; color: var(--lmu-error-color); transition: background 0.15s;
     }
     .lmu-btn-danger:hover { background: var(--lmu-error-bg); }
     .lmu-success {
-      background: #ecfdf5; color: #059669; padding: 8px 12px;
-      border-radius: 8px; font-size: 13px; margin-bottom: 14px;
-      border: 1px solid #a7f3d0;
+      background: var(--lmu-success-bg); color: var(--lmu-success-color); padding: 8px 12px;
+      border-radius: max(0px, calc(var(--lmu-radius-ctl) - 2px)); font-size: 13px; margin-bottom: 14px;
+      border: 1px solid var(--lmu-success-border);
     }
     .lmu-error {
       background: var(--lmu-error-bg); color: var(--lmu-error-color);
-      padding: 8px 12px; border-radius: 8px; font-size: 13px;
+      padding: 8px 12px; border-radius: max(0px, calc(var(--lmu-radius-ctl) - 2px)); font-size: 13px;
       margin-bottom: 14px; border: 1px solid var(--lmu-error-border);
     }
-    @media (max-width: 480px) {
-      .lmu-card { margin: 16px; padding: 28px; }
+    @media (max-width: 480px), (max-height: 600px) {
+      .lmu-card { max-width: 340px; padding: 24px 20px 20px; }
+      .lmu-close { top: 8px; right: 8px; }
+      .lmu-title { font-size: 19px; margin: 0 0 16px 0; }
+      .lmu-avatar-area { gap: 12px; margin-bottom: 16px; }
+      .lmu-avatar-circle { width: 48px; height: 48px; font-size: 20px; }
+      .lmu-avatar-name { font-size: 16px; }
+      .lmu-section { padding-top: 14px; margin-top: 14px; }
+      .lmu-section-title { margin: 0 0 10px 0; }
+      .lmu-field { margin: 0 0 10px 0; }
+      /* 16px: anything smaller makes iOS Safari zoom the whole page on focus */
+      .lmu-input { height: 40px; font-size: 16px; }
+      .lmu-input-wrap .lmu-input { padding-right: 40px; }
+      .lmu-eye-btn { width: 40px; height: 40px; }
     }
   `
 }
 
 /** Build the profile card widget styles */
-export function buildProfileCardStyles(accent: string, hostThemeVars: string): string {
+export function buildProfileCardStyles(hostThemeVars: string): string {
   return `
     :host {
       ${hostThemeVars}
       display: block;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: var(--lmu-font);
       line-height: 1.5;
     }
     *, *::before, *::after { box-sizing: border-box; }
     .lmu-profile-card {
       background: var(--lmu-bg);
       color: var(--lmu-text);
-      border-radius: 12px;
+      border-radius: max(0px, calc(var(--lmu-radius) - 4px));
       border: 1px solid var(--lmu-input-border);
       padding: 20px;
       max-width: 320px;
@@ -476,8 +531,8 @@ export function buildProfileCardStyles(accent: string, hostThemeVars: string): s
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: ${accent};
-      color: #fff;
+      background: var(--lmu-accent);
+      color: var(--lmu-on-accent);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -527,7 +582,7 @@ export function buildProfileCardStyles(accent: string, hostThemeVars: string): s
     .lmu-profile-btn {
       flex: 1;
       height: 36px;
-      border-radius: 8px;
+      border-radius: max(0px, calc(var(--lmu-radius-ctl) - 2px));
       border: 1px solid var(--lmu-input-border);
       background: var(--lmu-input-bg);
       color: var(--lmu-text);
@@ -538,13 +593,13 @@ export function buildProfileCardStyles(accent: string, hostThemeVars: string): s
       transition: background 0.15s, border-color 0.15s;
     }
     .lmu-profile-btn:hover {
-      border-color: ${accent};
+      border-color: var(--lmu-accent);
       background: var(--lmu-hover-bg);
     }
     .lmu-profile-btn.primary {
-      background: ${accent};
-      color: #fff;
-      border-color: ${accent};
+      background: var(--lmu-accent);
+      color: var(--lmu-on-accent);
+      border-color: var(--lmu-accent);
     }
     .lmu-profile-btn.primary:hover { opacity: 0.9; }
     .lmu-profile-login {
@@ -552,7 +607,7 @@ export function buildProfileCardStyles(accent: string, hostThemeVars: string): s
       padding: 8px 0;
     }
     .lmu-profile-login a {
-      color: ${accent};
+      color: var(--lmu-link);
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
@@ -563,13 +618,13 @@ export function buildProfileCardStyles(accent: string, hostThemeVars: string): s
 }
 
 /** Build the avatar button + dropdown styles */
-export function buildAvatarStyles(accent: string, hostThemeVars: string): string {
+export function buildAvatarStyles(hostThemeVars: string): string {
   return `
     :host {
       ${hostThemeVars}
       display: inline-block;
       position: relative;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: var(--lmu-font);
       line-height: 1.5;
     }
     *, *::before, *::after { box-sizing: border-box; }
@@ -578,8 +633,8 @@ export function buildAvatarStyles(accent: string, hostThemeVars: string): string
       height: 40px;
       border-radius: 50%;
       border: 2px solid var(--lmu-input-border);
-      background: ${accent};
-      color: #fff;
+      background: var(--lmu-accent);
+      color: var(--lmu-on-accent);
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
@@ -591,8 +646,8 @@ export function buildAvatarStyles(accent: string, hostThemeVars: string): string
       padding: 0;
     }
     .lmu-avatar-btn:hover {
-      border-color: ${accent};
-      box-shadow: 0 0 0 2px ${accent}33;
+      border-color: var(--lmu-accent);
+      box-shadow: 0 0 0 2px var(--lmu-ring);
     }
     .lmu-avatar-btn img {
       width: 100%;
@@ -614,18 +669,20 @@ export function buildAvatarStyles(accent: string, hostThemeVars: string): string
       transition: border-color 0.2s;
       padding: 0;
     }
-    .lmu-avatar-login:hover { border-color: ${accent}; color: ${accent}; }
+    .lmu-avatar-login:hover { border-color: var(--lmu-accent); color: var(--lmu-link); }
     .lmu-avatar-dropdown {
       position: absolute;
       top: calc(100% + 6px);
       right: 0;
       background: var(--lmu-bg);
       border: 1px solid var(--lmu-input-border);
-      border-radius: 10px;
+      border-radius: var(--lmu-radius-ctl);
       box-shadow: 0 8px 24px rgba(0,0,0,0.15);
       min-width: 200px;
       z-index: 99999;
       overflow: hidden;
+      -webkit-backdrop-filter: var(--lmu-card-filter);
+      backdrop-filter: var(--lmu-card-filter);
     }
     .lmu-avatar-dropdown-header {
       padding: 12px 14px;

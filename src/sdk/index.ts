@@ -5,14 +5,16 @@
  * Attributes:
  *   data-app-id    — Required. Your app ID from LetMeUse admin panel.
  *   data-theme     — "light" (default), "dark", or "auto"
- *   data-accent    — Accent color hex (default: "#2563eb")
+ *   data-style     — Visual style: "classic" (default), "minimal", "soft", "glass",
+ *                    "brutal", "terminal", "paper". Live gallery: /themes.html
+ *   data-accent    — Accent color hex (default: the style's own accent)
  *   data-locale    — "en" (default) or "zh"
  *   data-mode      — "modal" (default) or "redirect"
  */
 
 import type { Locale, ThemeMode, SdkMode, AuthCallback, LetMeUseUser, TokenRefreshCallback } from './types'
 import { createTranslator } from './i18n'
-import { ThemeManager } from './theme'
+import { ThemeManager, resolveStyleName } from './theme'
 import { AuthManager } from './auth'
 import type { ApiDeps } from './api'
 import { createModal } from './ui/login-modal'
@@ -29,7 +31,10 @@ const scriptTag = (document.currentScript
   ?? document.querySelector('script[src*="/letmeuse.js"][data-app-id]')) as HTMLScriptElement | null
 const appId = scriptTag?.getAttribute('data-app-id') ?? ''
 const themeSetting = (scriptTag?.getAttribute('data-theme') ?? 'light') as ThemeMode
-const accent = scriptTag?.getAttribute('data-accent') ?? '#2563eb'
+const styleAttr = scriptTag?.getAttribute('data-style') ?? null
+const style = resolveStyleName(styleAttr)
+// null = no override → the style's own accent (classic: #2563eb, as before)
+const accentOverride = scriptTag?.getAttribute('data-accent') ?? null
 const locale = (scriptTag?.getAttribute('data-locale') ?? 'en') as Locale
 const mode = (scriptTag?.getAttribute('data-mode') ?? 'modal') as SdkMode
 const baseUrl = scriptTag?.src ? new URL(scriptTag.src).origin : window.location.origin
@@ -37,11 +42,15 @@ const baseUrl = scriptTag?.src ? new URL(scriptTag.src).origin : window.location
 if (!appId) {
   console.warn('[LetMeUse SDK] Missing data-app-id attribute on script tag.')
 }
+if (styleAttr && styleAttr.trim().toLowerCase() !== style) {
+  console.warn(`[LetMeUse SDK] Unknown data-style "${styleAttr}" — using "${style}".`)
+}
 
 // ── Create core instances ─────────────────────────────
 
 const t = createTranslator(locale)
-const themeManager = new ThemeManager(themeSetting)
+const themeManager = new ThemeManager(themeSetting, style, accentOverride)
+const accent = themeManager.tokens.accent
 const apiDeps: ApiDeps = { baseUrl, t }
 const authManager = new AuthManager(appId, apiDeps)
 

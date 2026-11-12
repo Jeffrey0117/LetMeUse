@@ -333,9 +333,14 @@ export default function AdminAppsPage() {
               </div>
 
               <div className="mt-3 pt-3 border-t border-zinc-100">
-                <span className="text-zinc-500 text-xs">{t('admin.apps.scriptTag')}</span>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-zinc-500 text-xs">{t('admin.apps.scriptTag')}</span>
+                  <a href="/themes.html" target="_blank" rel="noopener" className="text-xs text-zinc-500 underline hover:text-zinc-900">
+                    {t('admin.apps.styleGallery')}
+                  </a>
+                </div>
                 <code className="block bg-zinc-50 px-2 py-1.5 rounded text-xs font-mono mt-1 break-all">
-                  {`<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/sdk.js" data-app-id="${app.id}"></script>`}
+                  {`<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/letmeuse.js" data-app-id="${app.id}" data-style="classic" data-theme="auto"></script>`}
                 </code>
               </div>
             </div>
