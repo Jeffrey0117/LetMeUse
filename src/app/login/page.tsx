@@ -28,7 +28,17 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  const appId = searchParams.get('app') ?? ''
+  const appParam = searchParams.get('app') ?? ''
+  const [consoleAppId, setConsoleAppId] = useState('')
+  // No app in the link = signing in to the LetMeUse console itself.
+  useEffect(() => {
+    if (appParam) return
+    fetch('/api/auth/console-app')
+      .then((res) => res.json())
+      .then((data) => setConsoleAppId(data.data?.appId ?? ''))
+      .catch(() => {})
+  }, [appParam])
+  const appId = appParam || consoleAppId
   const redirect = searchParams.get('redirect') ?? ''
   const initialTab = searchParams.get('tab') === 'register' ? 'register' : 'login'
   const oauthError = searchParams.get('error')

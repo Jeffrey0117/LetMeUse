@@ -44,6 +44,12 @@ export async function POST(request: NextRequest) {
       return authResult
     }
 
+    // Subscriptions are created by the payment webhook once money has moved.
+    // This endpoint used to activate any plan for any signed-in member for free.
+    if (process.env.LETMEUSE_ALLOW_UNPAID_SUBSCRIPTIONS !== 'true') {
+      return fail('Subscriptions are created by the payment provider, not by this endpoint', 410, origin)
+    }
+
     const body = await request.json()
     const { planId, interval = 'monthly' } = body as { planId?: string; interval?: string }
 
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const plan = await getById<Plan>(PLANS_FILE, planId)
-    if (!plan || !plan.isActive) {
+    if (!plan || !plan.isActive || (plan as Plan & { appId?: string }).appId !== authResult.payload.app) {
       return fail('Plan not found or inactive', 404, origin)
     }
 

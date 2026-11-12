@@ -1,26 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getById, ADS_FILE } from '@/lib/storage'
-import type { Ad } from '@/lib/models'
+import { NextResponse } from 'next/server'
 
-type RouteParams = { params: Promise<{ adId: string }> }
-
-export async function GET(_request: NextRequest, { params }: RouteParams) {
-  try {
-    const { adId } = await params
-    const ad = await getById<Ad>(ADS_FILE, adId)
-
-    if (!ad || ad.status !== 'enabled') {
-      return NextResponse.json(
-        { error: 'Ad not found or disabled' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(ad)
-  } catch {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+// 廣告/小工具嵌入已移到獨立的 adman 專案。這裡原本公開提供舊廣告內容給
+// /embed/letmeuse.js 畫到別人的頁面上,而那支嵌入碼對內容沒有做好跳脫。
+// 兩者一併停用。
+function gone() {
+  return NextResponse.json(
+    { error: 'This feature has moved to the standalone adman app.' },
+    { status: 410 }
+  )
 }
+
+export function GET() { return gone() }

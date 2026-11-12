@@ -38,15 +38,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        source: "/embed/letmeuse.js",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-cache",
-          },
-        ],
-      },
     ];
   },
 };

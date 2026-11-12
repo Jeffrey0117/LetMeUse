@@ -128,7 +128,13 @@ const ads = [
 // ── Auth seed data ──────────────────────────────────────
 
 const adminEmail = process.env.LETMEUSE_DEFAULT_ADMIN_EMAIL ?? 'admin@example.com'
-const adminPassword = process.env.LETMEUSE_DEFAULT_ADMIN_PASSWORD ?? 'changeme'
+// No fallback: a default password here became a live admin account with a
+// publicly known password. The seed refuses to run without a real one.
+const adminPassword = process.env.LETMEUSE_DEFAULT_ADMIN_PASSWORD ?? ''
+const WEAK_SEED_PASSWORDS = ['changeme', 'changeme123', 'password', 'admin123']
+if (adminPassword.length < 12 || WEAK_SEED_PASSWORDS.includes(adminPassword.toLowerCase())) {
+  throw new Error('Set LETMEUSE_DEFAULT_ADMIN_PASSWORD to a unique password of at least 12 characters before seeding.')
+}
 
 const defaultAppId = process.env.LETMEUSE_DEFAULT_APP_ID ?? `app_${nanoid(8)}`
 const defaultAppDomains = process.env.LETMEUSE_DEFAULT_APP_DOMAINS

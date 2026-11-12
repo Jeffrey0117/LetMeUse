@@ -8,7 +8,8 @@ import { corsResponse, success, fail } from '@/lib/api-result'
 import { canRedeemIntoExistingAccount } from '@/lib/auth/sso-policy'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { consumeSsoCode } from '@/lib/auth/sso-codes'
-import { createSession } from '@/lib/session'
+import { createSession, revokeAllUserSessions, revokeAllUserRefreshTokens } from '@/lib/session'
+import { hashPassword } from '@/lib/auth/password'
 import { dispatchWebhook } from '@/lib/webhook'
 import { writeAuditLog } from '@/lib/audit'
 
@@ -69,7 +70,12 @@ export async function POST(request: NextRequest) {
         id: generateUserId(),
         appId,
         email: sourceUser.email.toLowerCase(),
-        passwordHash: sourceUser.passwordHash,
+        // Only a verified source carries its password over. An unverified one
+        // proves nothing about who owns the address, so it must not be able to
+        // plant a password it knows on an account the real owner may claim later.
+        passwordHash: sourceUser.emailVerified
+          ? sourceUser.passwordHash
+          : await hashPassword(crypto.randomUUID() + crypto.randomUUID()),
         displayName: sourceUser.displayName,
         role: 'user',
         disabled: false,
@@ -86,6 +92,22 @@ export async function POST(request: NextRequest) {
     if (user.disabled) {
       return fail('Account is disabled', 403, origin)
     }
+
+    // The verified owner is arriving at an account nobody had proven ownership
+    // of (registered or SSO-provisioned from an unverified address). Whoever
+    // set it up loses access: old sessions end and the password becomes the
+    // verified owner's.
+    if (!created && sourceUser.emailVerified && !user.emailVerified) {
+      await revokeAllUserRefreshTokens(user.id)
+      await revokeAllUserSessions(user.id)
+      const claimed = await update<AuthUser>(USERS_FILE, user.id, {
+        passwordHash: sourceUser.passwordHash,
+        emailVerified: true,
+        updatedAt: now,
+      } as Partial<AuthUser>)
+      user = claimed ?? { ...user, emailVerified: true }
+    }
+
     if (targetApp.requireEmailVerification && !user.emailVerified) {
       return fail('Email not verified — 請先驗證信箱再登入', 403, origin)
     }

@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyAccessToken, decodeJwtPayloadSegment, type AccessTokenPayload } from './jwt'
 import { getById, getAll } from '../storage'
-import { APPS_FILE } from '../storage'
-import type { App } from '../auth-models'
+import { APPS_FILE, USERS_FILE } from '../storage'
+import type { App, AuthUser } from '../auth-models'
+import { platformAdminDenial, readPlatformAdminConfig } from './platform-admin'
 import { corsHeaders, fail } from '../api-result'
 import type { Permission } from '../rbac'
 import { safeEqual } from './safe-compare'
@@ -74,14 +75,8 @@ export async function authenticateRequest(
  * 平台管理員白名單 — env `PLATFORM_ADMIN_EMAILS` (逗號分隔)。
  * 修掉「任一 app 的 role:admin = 全域 admin」這個致命授權洞:
  * 全域 admin 端點 (/api/admin/*) 只認這些 email, 不是隨便哪個 app 的 admin。
+ * 2026-11 起再加一道:只認 `PLATFORM_ADMIN_APP_ID` 那一個 app 發的 token。
  */
-function platformAdminEmails(): string[] {
-  return (process.env.PLATFORM_ADMIN_EMAILS || '')
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
-}
-
 export async function requireAdmin(
   request: NextRequest
 ): Promise<{ payload: AccessTokenPayload; app: App } | NextResponse> {
@@ -102,17 +97,22 @@ export async function requireAdmin(
     return result
   }
 
-  // 🔒 平台管理員白名單檢查 — 沒設 env = fail-closed (拒絕, 不留洞)
-  const allow = platformAdminEmails()
-  if (allow.length === 0) {
+  // 🔒 平台管理員:限定單一主控 app + email 白名單 + 資料庫現況 (見 platform-admin.ts)。
+  // 任一設定缺漏 = fail-closed。
+  const config = readPlatformAdminConfig()
+  const account = await getById<AuthUser>(USERS_FILE, result.payload.sub)
+  const denial = platformAdminDenial(config, {
+    tokenApp: result.payload.app,
+    tokenEmail: result.payload.email,
+    account: account ?? null,
+  })
+  if (denial === 'not-configured') {
     console.error(
-      '[SECURITY] PLATFORM_ADMIN_EMAILS 未設定 → 拒絕所有 admin 後台存取。' +
-        '請在環境變數設平台管理員 email (逗號分隔) 才能進 /api/admin/*。'
+      '[SECURITY] PLATFORM_ADMIN_APP_ID / PLATFORM_ADMIN_EMAILS 未設定 → 拒絕所有 admin 後台存取。'
     )
     return fail('Admin not configured', 403, origin)
   }
-  const email = (result.payload.email || '').toLowerCase()
-  if (!allow.includes(email)) {
+  if (denial) {
     return fail('Admin access required', 403, origin)
   }
 

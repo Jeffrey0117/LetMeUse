@@ -2,4 +2,3 @@
 # every deploy rebuild leaves a phantom "modified" state that aborts the
 # next CloudPipe deploy's dirty-tree check.
 public/letmeuse.js -text
-public/embed/letmeuse.js -text
