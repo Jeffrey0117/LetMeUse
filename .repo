@@ -1,0 +1,411 @@
+{
+  "repo": 1,
+  "name": "letmeuse",
+  "what": "Auth-as-a-Service platform — embeddable authentication for any app.",
+  "kind": "service",
+  "work": {
+    "guide": "CLAUDE.md",
+    "run": "npm run dev",
+    "test": "npm test",
+    "build": "npm run build",
+    "deploy": "git push"
+  },
+  "offers": [
+    {
+      "id": "list_apps",
+      "what": "List all registered apps with id, name, secret, domains, webhookUrl",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/apps",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "create_app",
+      "what": "Register a new app for authentication. Returns { id, secret, domains, webhookUrl }.\n\nSDK: <script src=\"https://<this service public address>/letmeuse.js\" data-app-id=\"APP_ID\" data-theme=\"light|dark|auto\" data-accent=\"#hex\" data-locale=\"en|zh\" data-mode=\"modal|redirect\">\n\nwindow.letmeuse PROPERTIES (not methods!): ready (bool), user ({id,email,displayName,avatar,role}|null)\nMETHODS: login(), register(), logout(), getToken()=>string|null, onAuthChange(cb)=>unsubscribe, openProfile(), renderAvatar(target)=>cleanup, renderProfileCard(target)=>cleanup\n\nJWT payload: {sub,email,name,role,permissions,app,iat,exp} — decode base64url only, no signature verify needed (internal trust). 24h expiry.\nWebhook events (POST to webhookUrl, signed with X-LetMeUse-Signature HMAC-SHA256 using app secret): user.registered, user.login, user.updated, user.deleted, user.disabled, user.enabled, user.email_verified, user.password_reset",
+      "how": "http",
+      "http": {
+        "method": "POST",
+        "path": "/api/admin/apps",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "App name"
+            },
+            "domains": {
+              "type": "array",
+              "description": "Allowed domains"
+            },
+            "webhookUrl": {
+              "type": "string",
+              "description": "Webhook URL for auth events"
+            }
+          },
+          "required": [
+            "name",
+            "domains"
+          ]
+        }
+      }
+    },
+    {
+      "id": "get_app",
+      "what": "Get app details including secret, domains, webhookUrl, oauthProviders config",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/apps/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "App ID"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "update_app",
+      "what": "Update an app configuration (name, domains, webhookUrl, oauthProviders, requireEmailVerification, purchaseVerify). Use purchaseVerify to configure external purchase verification (e.g. classroo.tw).",
+      "how": "http",
+      "http": {
+        "method": "PATCH",
+        "path": "/api/admin/apps/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "App ID"
+            },
+            "name": {
+              "type": "string",
+              "description": "App name"
+            },
+            "domains": {
+              "type": "array",
+              "description": "Allowed domains"
+            },
+            "webhookUrl": {
+              "type": "string",
+              "description": "Webhook URL"
+            },
+            "purchaseVerify": {
+              "type": "object",
+              "description": "Purchase verification config: { enabled, providerUrl, providerSecret, purchasePageUrl, courseId? }"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "list_users",
+      "what": "List users with filters (appId, search, pagination)",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/users",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "appId": {
+              "type": "string",
+              "description": "Filter by app ID"
+            },
+            "search": {
+              "type": "string",
+              "description": "Search by email or name"
+            },
+            "page": {
+              "type": "number",
+              "description": "Page number (default: 1)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Results per page (default: 20)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "get_user",
+      "what": "Get user details: id, email, displayName, role, disabled, emailVerified, avatar, lastLoginAt",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/users/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "User ID"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "get_stats",
+      "what": "Get system statistics: total / new-today / active / disabled / verified / OAuth user counts, role breakdown, 7-day registration trend, webhook delivery counts, total apps. Optionally scoped to one app.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/stats",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "appId": {
+              "type": "string",
+              "description": "Limit user and webhook counts to one app (default: all apps)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "list_sessions",
+      "what": "List active user sessions (id, userId, userEmail, device, ip, lastActiveAt), most recently active first",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/sessions",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Filter by user email (substring match)"
+            },
+            "page": {
+              "type": "number",
+              "description": "Page number (default: 1)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Results per page (default: 20, max: 100)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "get_audit_log",
+      "what": "Get audit log entries (who did what), filterable by app, actor or action",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/audit-log",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "appId": {
+              "type": "string",
+              "description": "Filter by app ID"
+            },
+            "actorId": {
+              "type": "string",
+              "description": "Filter by the ID of the user who performed the action"
+            },
+            "action": {
+              "type": "string",
+              "description": "Filter by action name"
+            },
+            "page": {
+              "type": "number",
+              "description": "Page number (default: 1)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Results per page (default: 50, max: 100)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "list_plans",
+      "what": "List all billing plans of an app, including inactive ones (admin view). appId is required.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/plans",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "appId": {
+              "type": "string",
+              "description": "App ID whose plans to list"
+            }
+          },
+          "required": [
+            "appId"
+          ]
+        }
+      }
+    },
+    {
+      "id": "get_plan",
+      "what": "Get one billing plan by ID. Use after list_plans when you need a single plan's full record.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/plans/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Plan ID"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "list_roles",
+      "what": "List the roles of an app: built-in roles (admin, user) plus custom roles, each with its permissions. Use to see what a user's role allows.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/roles",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "appId": {
+              "type": "string",
+              "description": "App ID"
+            }
+          },
+          "required": [
+            "appId"
+          ]
+        }
+      }
+    },
+    {
+      "id": "get_role",
+      "what": "Get one custom role by ID (name, description, permissions, isDefault). Built-in roles are only returned by list_roles.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/roles/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Role ID"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "list_webhook_events",
+      "what": "List outgoing auth webhook deliveries (user.registered, user.login, ...) with their delivery status. Use to diagnose why an app did not receive an auth event.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/admin/webhooks",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "description": "Filter by delivery status: pending, delivered or failed"
+            },
+            "event": {
+              "type": "string",
+              "description": "Filter by event type: user.registered, user.login, user.updated, user.disabled, user.enabled, user.deleted, user.email_verified, user.password_reset"
+            },
+            "page": {
+              "type": "number",
+              "description": "Page number (default: 1)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Results per page (default: 25, max: 100)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "list_public_plans",
+      "what": "List the plans an app offers to its end users (the public pricing view, no auth needed). Use list_plans for the admin view.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/billing/plans",
+        "params": {
+          "type": "object",
+          "properties": {
+            "appId": {
+              "type": "string",
+              "description": "App ID"
+            }
+          },
+          "required": [
+            "appId"
+          ]
+        }
+      }
+    },
+    {
+      "id": "list_auth_providers",
+      "what": "List which OAuth login providers are enabled for an app, plus whether it requires email verification (public — what the login widget sees). Use to check an app's login setup without reading its secrets.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/auth/providers",
+        "params": {
+          "type": "object",
+          "properties": {
+            "app_id": {
+              "type": "string",
+              "description": "App ID"
+            }
+          },
+          "required": [
+            "app_id"
+          ]
+        }
+      }
+    }
+  ]
+}
